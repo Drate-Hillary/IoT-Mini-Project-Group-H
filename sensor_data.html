@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensor Data Dashboard</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .card {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            transition: transform 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .stat-card {
+            text-align: center;
+            padding: 15px;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        .temperature { border-left: 4px solid #dc3545; }
+        .humidity { border-left: 4px solid #0d6efd; }
+        .battery { border-left: 4px solid #198754; }
+        .motion { border-left: 4px solid #ffc107; }
+        .last-updated {
+            font-size: 0.8rem;
+            color: #6c757d;
+            text-align: right;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">Sensor Dashboard</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Historical Data</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Settings</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col">
+                <h1>Sensor Data Dashboard</h1>
+                <p class="text-muted">Real-time monitoring of temperature, humidity, battery voltage, and motion</p>
+            </div>
+            <div class="col-auto">
+                <div class="last-updated">Last updated: <span id="lastUpdateTime">Just now</span></div>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="row">
+            <div class="col-md-3 col-sm-6">
+                <div class="card temperature">
+                    <div class="card-body stat-card">
+                        <div class="stat-value" id="tempValue">--</div>
+                        <div class="stat-label">Temperature (°C)</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="card humidity">
+                    <div class="card-body stat-card">
+                        <div class="stat-value" id="humidityValue">--</div>
+                        <div class="stat-label">Humidity (%)</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="card battery">
+                    <div class="card-body stat-card">
+                        <div class="stat-value" id="batteryValue">--</div>
+                        <div class="stat-label">Battery (V)</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="card motion">
+                    <div class="card-body stat-card">
+                        <div class="stat-value" id="motionValue">--</div>
+                        <div class="stat-label">Motion Count</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="row mt-4">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Temperature & Humidity</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="tempHumidityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Battery Voltage</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="batteryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Motion Activity</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="motionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Data Table</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Temperature</th>
+                                        <th>Humidity</th>
+                                        <th>Battery</th>
+                                        <th>Motion</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dataTable">
+                                    <tr>
+                                        <td colspan="5" class="text-center">No data available</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Initialize charts
+        const tempHumidityCtx = document.getElementById('tempHumidityChart').getContext('2d');
+        const batteryCtx = document.getElementById('batteryChart').getContext('2d');
+        const motionCtx = document.getElementById('motionChart').getContext('2d');
+
+        // Sample data (replace with actual data from your API)
+        const timeLabels = ['10:00', '10:15', '10:30', '10:45', '11:00', '11:15', '11:30'];
+        const tempData = [22.5, 23.1, 22.8, 23.5, 24.2, 23.9, 24.5];
+        const humidityData = [45, 47, 46, 48, 49, 47, 50];
+        const batteryData = [3.7, 3.69, 3.68, 3.67, 3.66, 3.65, 3.64];
+        const motionData = [0, 2, 0, 5, 1, 0, 3];
+
+        // Temperature & Humidity Chart
+        const tempHumidityChart = new Chart(tempHumidityCtx, {
+            type: 'line',
+            data: {
+                labels: timeLabels,
+                datasets: [
+                    {
+                        label: 'Temperature (°C)',
+                        data: tempData,
+                        borderColor: '#dc3545',
+                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y',
+                        fill: true
+                    },
+                    {
+                        label: 'Humidity (%)',
+                        data: humidityData,
+                        borderColor: '#0d6efd',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y1',
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Temperature (°C)'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Humidity (%)'
+                        },
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    }
+                }
+            }
+        });
+
+        // Battery Chart
+        const batteryChart = new Chart(batteryCtx, {
+            type: 'line',
+            data: {
+                labels: timeLabels,
+                datasets: [{
+                    label: 'Battery Voltage (V)',
+                    data: batteryData,
+                    borderColor: '#198754',
+                    backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: 'Voltage (V)'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Motion Chart
+        const motionChart = new Chart(motionCtx, {
+            type: 'bar',
+            data: {
+                labels: timeLabels,
+                datasets: [{
+                    label: 'Motion Count',
+                    data: motionData,
+                    backgroundColor: 'rgba(255, 193, 7, 0.7)',
+                    borderColor: 'rgba(255, 193, 7, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Motion Count'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Function to update dashboard with new data
+        function updateDashboard(data) {
+            // Update stat cards
+            document.getElementById('tempValue').textContent = data.temperature || '--';
+            document.getElementById('humidityValue').textContent = data.humidity || '--';
+            document.getElementById('batteryValue').textContent = data.battery || '--';
+            document.getElementById('motionValue').textContent = data.motion || '--';
+            
+            // Update last updated time
+            document.getElementById('lastUpdateTime').textContent = new Date().toLocaleTimeString();
+            
+            // Update charts (this would normally add new data points)
+            // For demo purposes, we're just showing static data
+            
+            // Update data table
+            updateDataTable(data);
+        }
+
+        // Function to update data table
+        function updateDataTable(data) {
+            const tableBody = document.getElementById('dataTable');
+            const now = new Date();
+            
+            // Add new row at the top
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td>${now.toLocaleTimeString()}</td>
+                <td>${data.temperature || '--'}°C</td>
+                <td>${data.humidity || '--'}%</td>
+                <td>${data.battery || '--'}V</td>
+                <td>${data.motion || '--'}</td>
+            `;
+            
+            // If table has the "no data" row, remove it
+            if (tableBody.children.length === 1 && tableBody.children[0].children[0].colSpan) {
+                tableBody.innerHTML = '';
+            }
+            
+            tableBody.insertBefore(newRow, tableBody.firstChild);
+            
+            // Keep only the last 10 entries
+            if (tableBody.children.length > 10) {
+                tableBody.removeChild(tableBody.lastChild);
+            }
+        }
+
+        // Simulate receiving data (replace with actual API call to ThingSpeak)
+        function simulateDataUpdate() {
+            // Generate random data similar to your sensor readings
+            const newData = {
+                temperature: (20 + Math.random() * 5).toFixed(1),
+                humidity: (40 + Math.random() * 15).toFixed(0),
+                battery: (3.6 + Math.random() * 0.2).toFixed(2),
+                motion: Math.floor(Math.random() * 10)
+            };
+            
+            updateDashboard(newData);
+        }
+
+        // Initialize with sample data
+        updateDashboard({
+            temperature: tempData[tempData.length - 1],
+            humidity: humidityData[humidityData.length - 1],
+            battery: batteryData[batteryData.length - 1],
+            motion: motionData[motionData.length - 1]
+        });
+
+        // Simulate data updates every 30 seconds (replace with actual WebSocket or polling)
+        setInterval(simulateDataUpdate, 30000);
+    </script>
+</body>
+</html>
