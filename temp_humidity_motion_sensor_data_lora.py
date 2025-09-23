@@ -81,42 +81,68 @@ def get_historical_sensor_data():
     
     response = requests.get(url, headers=headers, params=params)
     if response.status_code == 200:
-        response_data = response.json()
-        
-        # Save to file
-        with open("message_history.json", "w") as f:
-            f.write(response.text.strip())
+        try:
+            # Clean the response text and try to parse JSON
+            response_text = response.text.strip()
+            
+            # Save raw response to file for debugging
+            with open("message_history.json", "w") as f:
+                f.write(response_text)
+            
+            # Try to parse JSON - handle potential multiple JSON objects
+            lines = response_text.split('\n')
+            if lines:
+                # Take only the first line if multiple JSON objects exist
+                first_json_line = lines[0]
+                response_data = json.loads(first_json_line)
+            else:
+                response_data = json.loads(response_text)
+                
+        except json.JSONDecodeError as e:
+            print(f"JSON decode error: {e}")
+            print(f"Response text (first 500 chars): {response.text[:500]}")
+            return None
         
         # Process and send historical data to ThingSpeak
-        if 'result' in response_data:
-            for reading in response_data['result']:
-                try:
+        # Parse each line as a separate JSON object
+        lines = response_text.split('\n')
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                line_data = json.loads(line)
+                if 'result' in line_data:
+                    reading = line_data['result']
+                    
                     # Extract sensor data from the reading
                     uplink_message = reading.get('uplink_message', {})
                     decoded_payload = uplink_message.get('decoded_payload', {})
                     
-                    # Extract fields (adjust these based on your actual payload structure)
+                    # Extract fields
                     battery_voltage = decoded_payload.get('field1', 0)
                     humidity = decoded_payload.get('field3', 0)
                     motion_counts = decoded_payload.get('field4', 0)
                     temperature = decoded_payload.get('field5', 0)
                     
-                    # Send to ThingSpeak
+                    # Display data to terminal
                     if any([battery_voltage, humidity, motion_counts, temperature]):
+                        timestamp = reading.get('received_at', 'Unknown')
+                        print(f"[{timestamp}] Historical - Temp: {temperature}°C, Humidity: {humidity}%, Battery: {battery_voltage}V, Motion: {motion_counts}")
                         send_to_thingspeak(battery_voltage, humidity, motion_counts, temperature)
                         time.sleep(15)  # ThingSpeak free account requires 15 seconds between updates
                         
-                except Exception as e:
-                    print(f"Error processing historical reading: {e}")
+            except Exception as e:
+                print(f"Error processing historical reading: {e}")
         
         print("Historical data processed and sent to ThingSpeak")
-        return response_data
+        return True
     else:
         print("Error:", response.status_code, response.text)
         return None
 
 # Get historical data (optional - you might want to comment this out if you only want real-time data)
-# get_historical_sensor_data()
+get_historical_sensor_data()
 
 # Listen for instant notifications
 topic = f"v3/{username}/devices/{device_id}/up"  # Topic for uplink messages automatically create by TTN for each sensor/device in your app
@@ -157,7 +183,8 @@ def on_message(client, userdata, msg):
         motion_counts = decoded_payload.get('field4', 0)
         temperature = decoded_payload.get('field5', 0)
         
-        print(f"Extracted data - Temp: {temperature}°C, Humidity: {humidity}%, Battery: {battery_voltage}V, Motion: {motion_counts}")
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print(f"[{timestamp}] Real-time - Temp: {temperature}°C, Humidity: {humidity}%, Battery: {battery_voltage}V, Motion: {motion_counts}")
         
         # Send to ThingSpeak
         if send_to_thingspeak(battery_voltage, humidity, motion_counts, temperature):
@@ -169,7 +196,7 @@ def on_message(client, userdata, msg):
         print(f"Error processing real-time message: {e}")
 
 # Set up MQTT client
-client = mqtt.Client()
+client = mqtt.Client(callback_api_version=2)
 client.username_pw_set(username, password)
 client.on_connect = on_connect
 client.on_message = on_message

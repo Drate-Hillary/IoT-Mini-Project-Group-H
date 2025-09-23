@@ -9,22 +9,22 @@
         "dev_addr": "260BDD93"
     },
     "correlation_ids": [
-        "gs:uplink:01K5TNEYNF5N4FV251ZF2XQEQ3"
+        "gs:uplink:01K5V8B10HAXQ2CAX2P6WJ3GNX"
     ],
-    "received_at": "2025-09-23T06:51:31.578167053Z",
+    "received_at": "2025-09-23T12:21:25.857950310Z",
     "uplink_message": {
         "session_key_id": "AZkoWqgF89FwDEVh1k7gdw==",
         "f_port": 2,
-        "f_cnt": 1958,
-        "frm_payload": "zAwKcwKBDgAAPbI=",
+        "f_cnt": 1989,
+        "frm_payload": "zAwKmQJeDgAAPpI=",
         "decoded_payload": {
             "Exti_pin_level": "No activity",
             "Work_mode": "PIR Sensor",
             "field1": 3.084,
             "field2": 3,
-            "field3": 64.1,
-            "field4": 15794,
-            "field5": 26.75
+            "field3": 60.6,
+            "field4": 16018,
+            "field5": 27.13
         },
         "rx_metadata": [
             {
@@ -32,20 +32,20 @@
                     "gateway_id": "bdata-lg308n-gw1",
                     "eui": "A84041FFFF286E34"
                 },
-                "time": "2025-09-23T06:51:31.269274Z",
-                "timestamp": 1046783186,
-                "rssi": -85,
-                "channel_rssi": -85,
-                "snr": 9.5,
-                "frequency_offset": "-450",
+                "time": "2025-09-23T12:21:25.513768Z",
+                "timestamp": 3661140677,
+                "rssi": -81,
+                "channel_rssi": -81,
+                "snr": 11.2,
+                "frequency_offset": "-442",
                 "location": {
                     "latitude": 0.3069107306940695,
                     "longitude": 32.553485794742954,
                     "source": "SOURCE_REGISTRY"
                 },
-                "uplink_token": "Ch4KHAoQYmRhdGEtbGczMDhuLWd3MRIIqEBB//8objQQ0smS8wMaDAjzhsnGBhC32oayASDQqI/Ju5UD",
+                "uplink_token": "Ch4KHAoQYmRhdGEtbGczMDhuLWd3MRIIqEBB//8objQQxaXi0Q0aDAjFocrGBhDV8M+0AiCIo/XnxtUH",
                 "channel_index": 5,
-                "received_at": "2025-09-23T06:51:31.373402935Z"
+                "received_at": "2025-09-23T12:21:25.647231573Z"
             }
         ],
         "settings": {
@@ -57,12 +57,11 @@
                 }
             },
             "frequency": "867500000",
-            "timestamp": 1046783186,
-            "time": "2025-09-23T06:51:31.269274Z"
+            "timestamp": 3661140677,
+            "time": "2025-09-23T12:21:25.513768Z"
         },
-        "received_at": "2025-09-23T06:51:31.375639683Z",
+        "received_at": "2025-09-23T12:21:25.649442063Z",
         "consumed_airtime": "0.061696s",
-        "packet_error_rate": 0.07692308,
         "version_ids": {
             "brand_id": "dragino",
             "model_id": "lht65",
