@@ -3,8 +3,13 @@ import json
 from datetime import datetime, timedelta
 import time
 import os
+from dotenv import load_dotenv
 import requests
-import json
+from supabase import create_client, Client
+import csv
+
+# Load environment variables from .env file
+load_dotenv(os.path.join(os.path.dirname(__file__), "../../.env"))
 
 # Configuration
 broker = "eu1.cloud.thethings.network"  # The MQTT Broker URL
@@ -19,6 +24,12 @@ last_sent_data = {'field1': None, 'field3': None, 'field4': None, 'field5': None
 # ThingSpeak Configuration
 THINGSPEAK_API_KEY = "GDNDTI8C2SCM8KRK"
 THINGSPEAK_URL = "https://api.thingspeak.com/update"
+THINGSPEAK_CHANNEL_ID = "3085407"
+
+# Supabase Configuration
+SUPABASE_URL = os.getenv("SUPABASE_URL") 
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")  
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Function to check if data has changed significantly
 def data_has_changed(field1, field3, field4, field5, threshold=0.1):
@@ -57,14 +68,107 @@ def send_to_thingspeak(field1, field3, field4, field5):
     try:
         response = requests.get(THINGSPEAK_URL, params=params)
         if response.status_code == 200:
-            entry_id = response.text
+            entry_id = int(response.text.strip())
             print(f"Data sent to ThingSpeak successfully! Entry ID: {entry_id}")
-            return True
+            return entry_id
         else:
             print(f"Error sending to ThingSpeak. Status code: {response.status_code}")
-            return False
+            return None
     except Exception as e:
         print(f"Exception occurred while sending to ThingSpeak: {e}")
+        return False
+
+# Function to fetch all ThingSpeak data and save to CSV
+def fetch_thingspeak_to_csv():
+    try:
+        url = f"https://api.thingspeak.com/channels/{THINGSPEAK_CHANNEL_ID}/feeds.json?results=8000"
+        response = requests.get(url, timeout=30)
+        
+        if response.status_code == 200:
+            data = response.json()
+            feeds = data.get('feeds', [])
+            
+            print(f"Found {len(feeds)} historical entries in ThingSpeak")
+            
+            # Write to CSV file
+            with open('thingspeak_historical_data.csv', 'w', newline='') as csvfile:
+                fieldnames = ['entry_id', 'timestamp', 'battery_voltage', 'humidity', 'motion_counts', 'temperature']
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                
+                writer.writeheader()
+                
+                for feed in feeds:
+                    writer.writerow({
+                        'entry_id': feed['entry_id'],
+                        'timestamp': feed['created_at'],
+                        'battery_voltage': feed['field1'] or 0,
+                        'humidity': feed['field3'] or 0,
+                        'motion_counts': feed['field4'] or 0,
+                        'temperature': feed['field5'] or 0
+                    })
+            
+            print("All ThingSpeak historical data saved to thingspeak_historical_data.csv")
+            return True
+        else:
+            print(f"Error fetching ThingSpeak data: {response.status_code}")
+            return False
+            
+    except Exception as e:
+        print(f"Error saving ThingSpeak data to CSV: {e}")
+        return False
+
+# Function to fetch all historical data from ThingSpeak
+def fetch_thingspeak_to_supabase():
+    try:
+        # Get all data from ThingSpeak (8000 entries max per request)
+        url = f"https://api.thingspeak.com/channels/{THINGSPEAK_CHANNEL_ID}/feeds.json?results=8000"
+        response = requests.get(url, timeout=30)
+        
+        if response.status_code == 200:
+            data = response.json()
+            feeds = data.get('feeds', [])
+            
+            print(f"Found {len(feeds)} historical entries in ThingSpeak")
+            
+            for feed in feeds:
+                entry_id = int(feed['entry_id'])
+                battery_voltage = float(feed['field1']) if feed['field1'] else 0
+                humidity = float(feed['field3']) if feed['field3'] else 0
+                motion_counts = int(feed['field4']) if feed['field4'] else 0
+                temperature = float(feed['field5']) if feed['field5'] else 0
+                timestamp = feed['created_at']
+                
+                # Store in Supabase
+                store_in_supabase(entry_id, battery_voltage, humidity, motion_counts, temperature, timestamp, "historical")
+                
+            print("All ThingSpeak historical data transferred to Supabase")
+            return True
+        else:
+            print(f"Error fetching ThingSpeak data: {response.status_code}")
+            return False
+            
+    except Exception as e:
+        print(f"Error transferring ThingSpeak data: {e}")
+        return False
+
+# Function to store data in Supabase with Entry ID as primary key
+def store_in_supabase(entry_id, battery_voltage, humidity, motion_counts, temperature, timestamp, data_type="real-time"):
+    try:
+        data = {
+            "entry_id": entry_id,
+            "battery_voltage": battery_voltage,
+            "humidity": humidity,
+            "motion_counts": motion_counts,
+            "temperature": temperature,
+            "timestamp": timestamp,
+            "data_type": data_type
+        }
+        
+        result = supabase.table("sensor_data").upsert(data).execute()
+        print(f"Data stored in Supabase successfully! Entry ID: {entry_id}")
+        return True
+    except Exception as e:
+        print(f"Error storing data in Supabase: {e}")
         return False
 
 # Fetch Historical Data and send to ThingSpeak
@@ -76,7 +180,7 @@ def get_historical_sensor_data():
     # Set authorization header
     headers = {"Authorization": f"Bearer {api_key}"}
     params = {
-        "last": "12h"  # get messages from last 12 hours. Max 48 hours. Possible values: 12m (12 minutes)
+        "last": "48h"  # get maximum historical data (48 hours)
     }
     
     response = requests.get(url, headers=headers, params=params)
@@ -125,12 +229,19 @@ def get_historical_sensor_data():
                     motion_counts = decoded_payload.get('field4', 0)
                     temperature = decoded_payload.get('field5', 0)
                     
-                    # Display data to terminal
+                    # Store all historical data in Supabase
                     if any([battery_voltage, humidity, motion_counts, temperature]):
-                        timestamp = reading.get('received_at', 'Unknown')
+                        timestamp = reading.get('received_at', datetime.now().isoformat())
                         print(f"[{timestamp}] Historical - Temp: {temperature}°C, Humidity: {humidity}%, Battery: {battery_voltage}V, Motion: {motion_counts}")
-                        send_to_thingspeak(battery_voltage, humidity, motion_counts, temperature)
-                        time.sleep(15)  # ThingSpeak free account requires 15 seconds between updates
+                        
+                        # Send to ThingSpeak and get Entry ID
+                        entry_id = send_to_thingspeak(battery_voltage, humidity, motion_counts, temperature)
+                        
+                        if entry_id:
+                            # Store in Supabase with Entry ID as primary key
+                            store_in_supabase(entry_id, battery_voltage, humidity, motion_counts, temperature, timestamp, "historical")
+                        
+                        time.sleep(15)  # ThingSpeak rate limit
                         
             except Exception as e:
                 print(f"Error processing historical reading: {e}")
@@ -141,21 +252,22 @@ def get_historical_sensor_data():
         print("Error:", response.status_code, response.text)
         return None
 
-# Get historical data (optional - you might want to comment this out if you only want real-time data)
-get_historical_sensor_data()
+# Fetch all historical data from ThingSpeak to CSV
+print("Fetching all historical data from ThingSpeak to CSV...")
+fetch_thingspeak_to_csv()
 
 # Listen for instant notifications
 topic = f"v3/{username}/devices/{device_id}/up"  # Topic for uplink messages automatically create by TTN for each sensor/device in your app
 
 # Callback: When connected to broker
-def on_connect(client, userdata, flags, rc):
-    if rc == 0:
+def on_connect(client, userdata, flags, reasonCode, properties):
+    if reasonCode == 0:
         print("Connected to TTN MQTT broker!")
         client.subscribe(topic)  # Subscribe to uplink topic
         # Reset retry delay on successful connection
         client.retry_delay = 5
     else:
-        print(f"Failed to connect, return code {rc}")
+        print(f"Failed to connect, return code {reasonCode}")
         retry_delay = getattr(client, 'retry_delay', 5)
         print(f"Reconnect failed, retrying in {retry_delay} seconds...")
         time.sleep(retry_delay)
@@ -183,12 +295,16 @@ def on_message(client, userdata, msg):
         motion_counts = decoded_payload.get('field4', 0)
         temperature = decoded_payload.get('field5', 0)
         
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        timestamp = datetime.now().isoformat()
         print(f"[{timestamp}] Real-time - Temp: {temperature}°C, Humidity: {humidity}%, Battery: {battery_voltage}V, Motion: {motion_counts}")
         
-        # Send to ThingSpeak
-        if send_to_thingspeak(battery_voltage, humidity, motion_counts, temperature):
-            print("Real-time data sent to ThingSpeak successfully!")
+        # Send to ThingSpeak and get Entry ID
+        entry_id = send_to_thingspeak(battery_voltage, humidity, motion_counts, temperature)
+        
+        if entry_id:
+            # Store in Supabase with Entry ID as primary key
+            store_in_supabase(entry_id, battery_voltage, humidity, motion_counts, temperature, timestamp, "real-time")
+            print("Real-time data sent to ThingSpeak and stored in Supabase successfully!")
         else:
             print("Failed to send real-time data to ThingSpeak")
             
@@ -196,7 +312,7 @@ def on_message(client, userdata, msg):
         print(f"Error processing real-time message: {e}")
 
 # Set up MQTT client
-client = mqtt.Client(callback_api_version=2)
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 client.username_pw_set(username, password)
 client.on_connect = on_connect
 client.on_message = on_message
