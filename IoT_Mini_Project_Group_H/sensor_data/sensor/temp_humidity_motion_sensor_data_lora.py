@@ -256,6 +256,10 @@ def get_historical_sensor_data():
 print("Fetching all historical data from ThingSpeak to CSV...")
 fetch_thingspeak_to_csv()
 
+# Fetch historical sensor data from TTN
+print("Fetching historical sensor data from TTN...")
+get_historical_sensor_data()
+
 # Listen for instant notifications
 topic = f"v3/{username}/devices/{device_id}/up"  # Topic for uplink messages automatically create by TTN for each sensor/device in your app
 
