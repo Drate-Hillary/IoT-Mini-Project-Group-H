@@ -78,11 +78,53 @@ def send_to_thingspeak(field1, field3, field4, field5):
         print(f"Exception occurred while sending to ThingSpeak: {e}")
         return False
 
+# Function to format timestamp to simplified format
+def format_timestamp(timestamp):
+    try:
+        # Parse the timestamp and format to YYYY-MM-DDTHH:MM:SSZ
+        if 'T' in timestamp:
+            dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+            return dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+        return timestamp
+    except:
+        return timestamp
+
+# Function to append new data to CSV file
+def append_to_csv(entry_id, battery_voltage, humidity, motion_counts, temperature, timestamp):
+    try:
+        # Check if CSV file exists, if not create with header
+        file_exists = os.path.exists('thingspeak_historical_data.csv')
+        
+        with open('thingspeak_historical_data.csv', 'a', newline='') as csvfile:
+            fieldnames = ['entry_id', 'timestamp', 'battery_voltage', 'humidity', 'motion_counts', 'temperature']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            
+            # Write header if file is new
+            if not file_exists:
+                writer.writeheader()
+            
+            # Append new row
+            writer.writerow({
+                'entry_id': entry_id,
+                'timestamp': format_timestamp(timestamp),
+                'battery_voltage': battery_voltage,
+                'humidity': humidity,
+                'motion_counts': motion_counts,
+                'temperature': temperature
+            })
+        
+        print(f"Data appended to CSV file! Entry ID: {entry_id}")
+        return True
+    except Exception as e:
+        print(f"Error appending to CSV: {e}")
+        return False
+
 # Function to fetch all ThingSpeak data and save to CSV
 def fetch_thingspeak_to_csv():
     try:
         url = f"https://api.thingspeak.com/channels/{THINGSPEAK_CHANNEL_ID}/feeds.json?results=8000"
         response = requests.get(url, timeout=30)
+        
         
         if response.status_code == 200:
             data = response.json()
@@ -100,7 +142,7 @@ def fetch_thingspeak_to_csv():
                 for feed in feeds:
                     writer.writerow({
                         'entry_id': feed['entry_id'],
-                        'timestamp': feed['created_at'],
+                        'timestamp': format_timestamp(feed['created_at']),
                         'battery_voltage': feed['field1'] or 0,
                         'humidity': feed['field3'] or 0,
                         'motion_counts': feed['field4'] or 0,
@@ -240,6 +282,8 @@ def get_historical_sensor_data():
                         if entry_id:
                             # Store in Supabase with Entry ID as primary key
                             store_in_supabase(entry_id, battery_voltage, humidity, motion_counts, temperature, timestamp, "historical")
+                            # Append to CSV file
+                            append_to_csv(entry_id, battery_voltage, humidity, motion_counts, temperature, timestamp)
                         
                         time.sleep(15)  # ThingSpeak rate limit
                         
@@ -299,7 +343,7 @@ def on_message(client, userdata, msg):
         motion_counts = decoded_payload.get('field4', 0)
         temperature = decoded_payload.get('field5', 0)
         
-        timestamp = datetime.now().isoformat()
+        timestamp = datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
         print(f"[{timestamp}] Real-time - Temp: {temperature}°C, Humidity: {humidity}%, Battery: {battery_voltage}V, Motion: {motion_counts}")
         
         # Send to ThingSpeak and get Entry ID
@@ -308,7 +352,9 @@ def on_message(client, userdata, msg):
         if entry_id:
             # Store in Supabase with Entry ID as primary key
             store_in_supabase(entry_id, battery_voltage, humidity, motion_counts, temperature, timestamp, "real-time")
-            print("Real-time data sent to ThingSpeak and stored in Supabase successfully!")
+            # Append to CSV file
+            append_to_csv(entry_id, battery_voltage, humidity, motion_counts, temperature, timestamp)
+            print("Real-time data sent to ThingSpeak, stored in Supabase, and appended to CSV successfully!")
         else:
             print("Failed to send real-time data to ThingSpeak")
             
