@@ -33,7 +33,6 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Function to check if data has changed significantly
 def data_has_changed(field1, field3, field4, field5, threshold=0.1):
-    """Check if sensor data has changed significantly from last sent values"""
     global last_sent_data
     
     # Always send if this is the first reading
@@ -50,13 +49,6 @@ def data_has_changed(field1, field3, field4, field5, threshold=0.1):
 
 # Function to send data to ThingSpeak
 def send_to_thingspeak(field1, field3, field4, field5):
-    """
-    Send sensor data to ThingSpeak channel
-    field1: Battery Voltage
-    field3: Humidity
-    field4: Motion Counts
-    field5: Temperature (in Celsius)
-    """
     params = {
         'api_key': THINGSPEAK_API_KEY,
         'field1': field1,
