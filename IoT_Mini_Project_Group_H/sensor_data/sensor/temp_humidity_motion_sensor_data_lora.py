@@ -220,21 +220,24 @@ def get_historical_sensor_data():
     response = requests.get(url, headers=headers, params=params)
     if response.status_code == 200:
         try:
-            # Clean the response text and try to parse JSON
             response_text = response.text.strip()
+            
+            # Check if response is empty
+            if not response_text:
+                print("No historical data available from TTN")
+                return True
             
             # Save raw response to file for debugging
             with open("message_history.json", "w") as f:
                 f.write(response_text)
             
-            # Try to parse JSON - handle potential multiple JSON objects
+            # Try to parse JSON
             lines = response_text.split('\n')
-            if lines:
-                # Take only the first line if multiple JSON objects exist
-                first_json_line = lines[0]
-                response_data = json.loads(first_json_line)
+            if lines and lines[0]:
+                response_data = json.loads(lines[0])
             else:
-                response_data = json.loads(response_text)
+                print("Empty response from TTN API")
+                return True
                 
         except json.JSONDecodeError as e:
             print(f"JSON decode error: {e}")
@@ -288,31 +291,27 @@ def get_historical_sensor_data():
         print("Error:", response.status_code, response.text)
         return None
 
-# Fetch all historical data from ThingSpeak to CSV
-print("Fetching all historical data from ThingSpeak to CSV...")
-fetch_thingspeak_to_csv()
-
-# Fetch historical sensor data from TTN
-print("Fetching historical sensor data from TTN...")
-get_historical_sensor_data()
+# Only run data fetching if script is executed directly
+if __name__ == "__main__":
+    # Fetch all historical data from ThingSpeak to CSV
+    print("Fetching all historical data from ThingSpeak to CSV...")
+    fetch_thingspeak_to_csv()
+    
+    # Fetch historical sensor data from TTN
+    print("Fetching historical sensor data from TTN...")
+    get_historical_sensor_data()
 
 # Listen for instant notifications
 topic = f"v3/{username}/devices/{device_id}/up"  # Topic for uplink messages automatically create by TTN for each sensor/device in your app
 
 # Callback: When connected to broker
-def on_connect(client, userdata, flags, reasonCode, properties):
-    if reasonCode == 0:
+def on_connect(client, userdata, flags, rc):
+    if rc == 0:
         print("Connected to TTN MQTT broker!")
         client.subscribe(topic)  # Subscribe to uplink topic
-        # Reset retry delay on successful connection
-        client.retry_delay = 5
+        print(f"Subscribed to topic: {topic}")
     else:
-        print(f"Failed to connect, return code {reasonCode}")
-        retry_delay = getattr(client, 'retry_delay', 5)
-        print(f"Reconnect failed, retrying in {retry_delay} seconds...")
-        time.sleep(retry_delay)
-        # Exponential backoff with max 300 seconds (5 minutes)
-        client.retry_delay = min(retry_delay * 2, 300)
+        print(f"Failed to connect, return code {rc}")
 
 # Callback: When a message is received
 def on_message(client, userdata, msg):
@@ -354,18 +353,22 @@ def on_message(client, userdata, msg):
         print(f"Error processing real-time message: {e}")
 
 # Set up MQTT client
-client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+try:
+    client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
+except:
+    client = mqtt.Client()
 client.username_pw_set(username, password)
 client.on_connect = on_connect
 client.on_message = on_message
 
 # Connect to broker and start loop
-try:
-    client.connect(broker, port, 60)
-    print("Starting MQTT client loop...")
-    client.loop_forever()
-except KeyboardInterrupt:
-    print("Disconnecting from MQTT broker...")
-    client.disconnect()
-except Exception as e:
-    print(f"Error in MQTT connection: {e}")
+if __name__ == "__main__":
+    try:
+        client.connect(broker, port, 60)
+        print("Starting MQTT client loop...")
+        client.loop_forever()
+    except KeyboardInterrupt:
+        print("Disconnecting from MQTT broker...")
+        client.disconnect()
+    except Exception as e:
+        print(f"Error in MQTT connection: {e}")
