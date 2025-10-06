@@ -305,7 +305,7 @@ if __name__ == "__main__":
 topic = f"v3/{username}/devices/{device_id}/up"  # Topic for uplink messages automatically create by TTN for each sensor/device in your app
 
 # Callback: When connected to broker
-def on_connect(client, userdata, flags, rc):
+def on_connect(client, userdata, flags, rc, *args):
     if rc == 0:
         print("Connected to TTN MQTT broker!")
         client.subscribe(topic)  # Subscribe to uplink topic
@@ -353,10 +353,7 @@ def on_message(client, userdata, msg):
         print(f"Error processing real-time message: {e}")
 
 # Set up MQTT client
-try:
-    client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2)
-except:
-    client = mqtt.Client()
+client = mqtt.Client()
 client.username_pw_set(username, password)
 client.on_connect = on_connect
 client.on_message = on_message

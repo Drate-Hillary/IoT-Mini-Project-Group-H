@@ -6,25 +6,25 @@
         },
         "dev_eui": "A84041C68189F496",
         "join_eui": "A840410000000100",
-        "dev_addr": "260BDD93"
+        "dev_addr": "260BD670"
     },
     "correlation_ids": [
-        "gs:uplink:01K6A9KGHPM4HM9NYNCQ5XR4W0"
+        "gs:uplink:01K6WMQ18E5AWCSF94N4E06V7Z"
     ],
-    "received_at": "2025-09-29T08:32:08.962008214Z",
+    "received_at": "2025-10-06T11:32:38.490105281Z",
     "uplink_message": {
-        "session_key_id": "AZkoWqgF89FwDEVh1k7gdw==",
+        "session_key_id": "AZmoT8OzeIcFPG5iE7vWbA==",
         "f_port": 2,
-        "f_cnt": 2939,
-        "frm_payload": "zA4JZALYDgAAV5E=",
+        "f_cnt": 978,
+        "frm_payload": "zAQJcQLeDgAAEzc=",
         "decoded_payload": {
             "Exti_pin_level": "No activity",
             "Work_mode": "PIR Sensor",
-            "field1": 3.086,
+            "field1": 3.076,
             "field2": 3,
-            "field3": 72.8,
-            "field4": 22417,
-            "field5": 24.04
+            "field3": 73.4,
+            "field4": 4919,
+            "field5": 24.17
         },
         "rx_metadata": [
             {
@@ -32,20 +32,20 @@
                     "gateway_id": "bdata-lg308n-gw1",
                     "eui": "A84041FFFF286E34"
                 },
-                "time": "2025-09-29T08:32:08.644942Z",
-                "timestamp": 2094616364,
-                "rssi": -98,
-                "channel_rssi": -98,
-                "snr": 12.5,
-                "frequency_offset": "-466",
+                "time": "2025-10-06T11:32:38.106432Z",
+                "timestamp": 4108738259,
+                "rssi": -46,
+                "channel_rssi": -46,
+                "snr": 10,
+                "frequency_offset": "-465",
                 "location": {
                     "latitude": 0.3069107306940695,
                     "longitude": 32.553485794742954,
                     "source": "SOURCE_REGISTRY"
                 },
-                "uplink_token": "Ch4KHAoQYmRhdGEtbGczMDhuLWd3MRIIqEBB//8objQQrJ7l5gcaDAiIiOnGBhDhgu7oAiDgh/WG+zw=",
-                "channel_index": 7,
-                "received_at": "2025-09-29T08:32:08.756777313Z"
+                "uplink_token": "Ch4KHAoQYmRhdGEtbGczMDhuLWd3MRIIqEBB//8objQQ072Zpw8aDAjW0Y7HBhDf3OyHASC40Imfync=",
+                "channel_index": 2,
+                "received_at": "2025-10-06T11:32:38.284896863Z"
             }
         ],
         "settings": {
@@ -56,11 +56,11 @@
                     "coding_rate": "4/5"
                 }
             },
-            "frequency": "867900000",
-            "timestamp": 2094616364,
-            "time": "2025-09-29T08:32:08.644942Z"
+            "frequency": "868500000",
+            "timestamp": 4108738259,
+            "time": "2025-10-06T11:32:38.106432Z"
         },
-        "received_at": "2025-09-29T08:32:08.759024596Z",
+        "received_at": "2025-10-06T11:32:38.287335074Z",
         "consumed_airtime": "0.061696s",
         "version_ids": {
             "brand_id": "dragino",
@@ -77,9 +77,9 @@
             "cluster_address": "eu1.cloud.thethings.network"
         },
         "last_battery_percentage": {
-            "f_cnt": 2915,
+            "f_cnt": 808,
             "value": 100,
-            "received_at": "2025-09-28T20:32:21.350093997Z"
+            "received_at": "2025-10-05T19:03:10.928950647Z"
         }
     }
 }

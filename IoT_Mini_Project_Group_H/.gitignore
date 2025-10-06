@@ -20,6 +20,7 @@ staticfiles/
 
 # Node modules
 node_modules/
+.next
 
 # CSV data files
 *.csv
