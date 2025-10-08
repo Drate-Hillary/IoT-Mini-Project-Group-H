@@ -6,6 +6,7 @@ import { VscLoading } from 'react-icons/vsc';
 import SensorCard from "@/components/charts/incoming_sensor_datasets_card"
 import { ChartArea } from "@/components/charts/area_chart"
 import { DataGraphCard } from "@/components/charts/data_graph_card"
+import { DashboardSummary } from '@/components/charts/dashboard_summary';
 
 export default function Home() {
   const [sensorData, setSensorData] = useState(null);
@@ -60,6 +61,7 @@ export default function Home() {
     <main className="container mx-auto py-12 md:py-24">
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="lg:col-span-2">
+          <DashboardSummary />
           <ChartArea />
         </div>
 

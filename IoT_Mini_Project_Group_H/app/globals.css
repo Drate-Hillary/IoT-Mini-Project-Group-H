@@ -30,6 +30,8 @@
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
     --chart-emerald: 145 63.4% 49.2%;
+    --chart-temperature: 50.5% 0.213 27.518;
+    --chart-humidity: 142.1 76.2% 36.3%;
   }
 
   .dark {
@@ -58,6 +60,8 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
     --chart-emerald: 145 63.4% 49.2%;
+    --chart-temperature: 50.5% 0.213 27.518;
+    --chart-humidity: 142.1 76.2% 36.3%;
   }
 }
 

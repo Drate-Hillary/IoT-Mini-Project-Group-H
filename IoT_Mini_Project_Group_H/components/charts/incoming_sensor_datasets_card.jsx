@@ -1,43 +1,43 @@
 "use client";
 
-import * as React from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { LuCloudDownload } from "react-icons/lu";
+import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 import { TbCloudDataConnection } from "react-icons/tb";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { IoCalendarOutline, IoCloudDownloadOutline } from "react-icons/io5";
 
-// Generating 100 sample data entries
-const sensorReadings = Array.from({ length: 100 }, (_, i) => ({
-  id: `SEN-${(i + 1).toString().padStart(3, '0')}`,
-  temperature: +(23 + Math.random() * 5).toFixed(1),
-  humidity: Math.floor(60 + Math.random() * 20),
-  motion: Math.floor(Math.random() * 35),
-  battery: +(3.8 + Math.random() * 0.4).toFixed(2)
-}));
+const formatDate = (date) => {
+  if (!date) return null;
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+};
 
 const SensorCard = () => {
-  // 1. State for page size and current page
-  const [pageSize, setPageSize] = React.useState(10);
-  const [currentPage, setCurrentPage] = React.useState(1);
+  const [sensorReadings, setSensorReadings] = useState([]);
+  const [pageSize, setPageSize] = useState(100);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [startDate, setStartDate] = useState();
+  const [endDate, setEndDate] = useState();
 
-  // 2. Calculations are now based on the `pageSize` state
+  useEffect(() => {
+    const fetchData = () => {
+      fetch('/api/supabase-data')
+        .then(res => res.json())
+        .then(data => setSensorReadings(data))
+        .catch(err => console.log(err))
+    }
+    
+    fetchData()
+    const interval = setInterval(fetchData, 30000)
+    return () => clearInterval(interval)
+  }, []);
+
   const totalPages = Math.ceil(sensorReadings.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
@@ -52,8 +52,37 @@ const SensorCard = () => {
   };
   
   const handlePageSizeChange = (value) => {
-    setPageSize(Number(value));
-    setCurrentPage(1); // Reset to page 1 when page size changes
+    setPageSize(value === 'All' ? sensorReadings.length : Number(value));
+    setCurrentPage(1);
+  };
+
+  const handleDownloadCSV = () => {
+    let filteredData = sensorReadings;
+    
+    if (startDate || endDate) {
+      filteredData = sensorReadings.filter(reading => {
+        const readingDate = new Date(reading.created_at);
+        if (startDate && readingDate < startDate) return false;
+        if (endDate && readingDate > endDate) return false;
+        return true;
+      });
+    }
+    
+    const headers = ['Entry ID', 'Temperature', 'Humidity', 'Motion Count', 'Battery Voltage', 'Timestamp'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredData.map(r => 
+        `${r.entry_id},${r.temperature},${r.humidity},${r.motion_counts},${r.battery_voltage},${r.timestamp}`
+      )
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sensor_data_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
   };
 
   return (
@@ -67,11 +96,84 @@ const SensorCard = () => {
           <Popover>
             <PopoverTrigger asChild>
               <Button className="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 cursor-pointer">
-                <LuCloudDownload className="mr-2 size-4" />
+                <IoCloudDownloadOutline className="mr-2 size-4" />
                 Export<span className="hidden sm:inline">&nbsp;CSV File</span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent>Place content for the popover here.</PopoverContent>
+            <PopoverContent className="w-80">
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <h4 className="font-medium leading-none">Export Sensor Data</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Select a date range to download as a CSV.
+                  </p>
+                </div>
+                <Separator />
+                <div className="grid gap-2">
+                  {/* Start Date Picker */}
+                  <div className="grid grid-cols-3 items-center gap-4">
+                    <Label htmlFor="start-date" className="text-right">Start Date</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          id="start-date"
+                          variant={"outline"}
+                          className={cn(
+                            "col-span-2 justify-start text-left font-normal",
+                            !startDate && "text-muted-foreground"
+                          )}
+                        >
+                          <IoCalendarOutline className="mr-2 h-4 w-4" />
+                          {startDate ? formatDate(startDate) : <span>Pick a date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={startDate}
+                          onSelect={setStartDate}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  {/* End Date Picker */}
+                  <div className="grid grid-cols-3 items-center gap-4">
+                    <Label htmlFor="end-date" className="text-right">End Date</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          id="end-date"
+                          variant={"outline"}
+                          className={cn(
+                            "col-span-2 justify-start text-left font-normal",
+                            !endDate && "text-muted-foreground"
+                          )}
+                        >
+                          <IoCalendarOutline className="mr-2 h-4 w-4" />
+                          {endDate ? formatDate(endDate) : <span>Pick a date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={endDate}
+                          onSelect={setEndDate}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+                <Button
+                  onClick={handleDownloadCSV}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700"
+                >
+                 <IoCloudDownloadOutline className="mr-2 size-4" />
+                  Download Data
+                </Button>
+              </div>
+            </PopoverContent>
           </Popover>
         </CardTitle>
         <CardDescription className="text-sm text-muted-foreground">
@@ -93,12 +195,12 @@ const SensorCard = () => {
             </TableHeader>
             <TableBody>
               {currentReadings.map((reading) => (
-                <TableRow key={reading.id}>
-                  <TableCell className="font-medium">{reading.id}</TableCell>
+                <TableRow key={reading.entry_id}>
+                  <TableCell className="font-medium">{reading.entry_id}</TableCell>
                   <TableCell>{reading.temperature}°C</TableCell>
                   <TableCell>{reading.humidity}%</TableCell>
-                  <TableCell>{reading.motion}</TableCell>
-                  <TableCell className="text-right">{reading.battery}V</TableCell>
+                  <TableCell>{reading.motion_counts}</TableCell>
+                  <TableCell className="text-right">{reading.battery_voltage}V</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -106,7 +208,6 @@ const SensorCard = () => {
         </div>
       </CardContent>
       <CardFooter className="flex flex-col sm:flex-row items-center justify-between border-t pt-4 gap-4">
-        {/* 3. Page size selector */}
         <div className="flex items-center space-x-2 text-xs text-muted-foreground">
           <span>Rows per page</span>
           <Select value={`${pageSize}`} onValueChange={handlePageSizeChange}>
@@ -114,13 +215,15 @@ const SensorCard = () => {
               <SelectValue placeholder={pageSize} />
             </SelectTrigger>
             <SelectContent>
-              {[10, 20, 50, 100].map((size) => (
+              {[100, 200, 250, 300, 500, 'All'].map((size) => (
                 <SelectItem key={size} value={`${size}`}>
                   {size}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+          <span>of <strong>{sensorReadings.length}</strong> Entries</span>
+          
         </div>
         <div className="flex items-center gap-2">
           <div className="text-xs text-muted-foreground">
@@ -149,3 +252,4 @@ const SensorCard = () => {
 };
 
 export default SensorCard;
+

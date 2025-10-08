@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Droplets } from "lucide-react";
 import {
   Label,
@@ -18,10 +19,6 @@ import {
 } from "@/components/ui/card";
 import { ChartConfig, ChartContainer } from "@/components/ui/chart";
 
-const chartData = [
-  { metric: "humidity", value: 68, fill: "var(--color-humidity)" },
-];
-
 const chartConfig = {
   value: {
     label: "Humidity",
@@ -33,6 +30,18 @@ const chartConfig = {
 };
 
 export function HumidityChartRadial() {
+  const [weatherData, setWeatherData] = useState({ humidity: 68, location: "Loading..." });
+
+  useEffect(() => {
+    fetch('/api/weather')
+      .then(res => res.json())
+      .then(data => setWeatherData({ humidity: data.humidity, location: data.location }))
+      .catch(err => console.error(err));
+  }, []);
+
+  const chartData = [
+    { metric: "humidity", value: weatherData.humidity, fill: "var(--color-humidity)" },
+  ];
   return (
     <Card className="flex flex-col">
       <CardHeader className="pb-0">
@@ -84,14 +93,14 @@ export function HumidityChartRadial() {
                           y={viewBox.cy}
                           className="fill-foreground text-4xl font-bold"
                         >
-                          {chartData[0].value.toLocaleString()}%
+                          {chartData[0].value?.toFixed(0) || '0'}%
                         </tspan>
                         <tspan
                           x={viewBox.cx}
                           y={(viewBox.cy || 0) + 24}
-                          className="fill-muted-foreground"
+                          className="fill-muted-foreground text-sm"
                         >
-                          Humidity
+                          {weatherData.location}
                         </tspan>
                       </text>
                     );

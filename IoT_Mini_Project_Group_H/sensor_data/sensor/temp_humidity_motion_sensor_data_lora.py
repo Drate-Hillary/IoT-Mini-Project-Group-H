@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import requests
 from supabase import create_client, Client
 import csv
+from average_summary import calculate_and_save_averages
 
 # Load environment variables from .env file
 load_dotenv(os.path.join(os.path.dirname(__file__), "../../.env"))
@@ -27,8 +28,8 @@ THINGSPEAK_URL = "https://api.thingspeak.com/update"
 THINGSPEAK_CHANNEL_ID = "3085407"
 
 # Supabase Configuration
-SUPABASE_URL = os.getenv("SUPABASE_URL") 
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")  
+SUPABASE_URL = os.getenv("NEXT_PUBLIC_SUPABASE_URL") 
+SUPABASE_KEY = os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")  
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Function to check if data has changed significantly
@@ -62,6 +63,7 @@ def send_to_thingspeak(field1, field3, field4, field5):
         if response.status_code == 200:
             entry_id = int(response.text.strip())
             print(f"Data sent to ThingSpeak successfully! Entry ID: {entry_id}")
+            calculate_and_save_averages()
             return entry_id
         else:
             print(f"Error sending to ThingSpeak. Status code: {response.status_code}")

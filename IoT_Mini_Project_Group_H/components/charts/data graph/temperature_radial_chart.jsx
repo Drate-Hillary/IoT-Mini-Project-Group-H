@@ -1,6 +1,6 @@
 "use client";
 
-import { Thermometer } from "lucide-react";
+import { useState, useEffect } from "react";
 import {
   Label,
   PolarGrid,
@@ -11,21 +11,12 @@ import {
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ChartConfig, ChartContainer } from "@/components/ui/chart";
-import { AiOutlineArrowUp } from "react-icons/ai";
+import { ChartContainer } from "@/components/ui/chart";
 import { BsThermometerSun } from "react-icons/bs";
 
-// 1. chartData updated for temperature
-const chartData = [
-  { metric: "temperature", value: 25.4, fill: "var(--color-temperature)" },
-];
-
-// 2. chartConfig updated for temperature
 const chartConfig = {
   value: {
     label: "Temperature",
@@ -37,13 +28,34 @@ const chartConfig = {
 };
 
 export function TemperatureChartRadial() {
+  const [weatherData, setWeatherData] = useState({ temp: 25, location: "Loading..." });
+
+  useEffect(() => {
+    fetch('/api/weather')
+      .then(res => res.json())
+      .then(data => setWeatherData({ temp: data.temp, location: data.location }))
+      .catch(err => console.error(err));
+  }, []);
+
+  const getTemperatureColor = (temp) => {
+    if (temp < 10) return "hsl(200, 80%, 50%)"; // Cold - Blue
+    if (temp < 20) return "hsl(180, 70%, 50%)"; // Cool - Cyan
+    if (temp < 25) return "hsl(120, 60%, 50%)"; // Mild - Green
+    if (temp < 30) return "hsl(45, 90%, 55%)";  // Warm - Yellow
+    if (temp < 35) return "hsl(25, 90%, 55%)";  // Hot - Orange
+    return "hsl(0, 80%, 50%)";                  // Very Hot - Red
+  };
+
+  const chartData = [
+    { metric: "temperature", value: weatherData.temp, fill: getTemperatureColor(weatherData.temp) },
+  ];
   return (
     <Card className="flex flex-col bg-muted/40">
       <CardHeader className="items-center pb-0">
         <CardTitle>
           <div className="flex flex-row gap-1 items-center">
             <BsThermometerSun className="h-6 w-6 text-emerald-800" />
-            Temperature
+            Current Temperature
           </div>
         </CardTitle>
       </CardHeader>
@@ -84,20 +96,19 @@ export function TemperatureChartRadial() {
                         textAnchor="middle"
                         dominantBaseline="middle"
                       >
-                        {/* 5. Center label updated for temperature */}
                         <tspan
                           x={viewBox.cx}
                           y={viewBox.cy}
                           className="fill-foreground text-2xl font-bold"
                         >
-                          {chartData[0].value.toLocaleString()}°C
+                          {chartData[0].value?.toFixed(1) || '0.0'}°C
                         </tspan>
                         <tspan
                           x={viewBox.cx}
                           y={(viewBox.cy || 0) + 24}
-                          className="fill-muted-foreground"
+                          className="fill-muted-foreground text-sm"
                         >
-                          5.4% <AiOutlineArrowUp className="" />
+                          {weatherData.location}
                         </tspan>
                       </text>
                     );
