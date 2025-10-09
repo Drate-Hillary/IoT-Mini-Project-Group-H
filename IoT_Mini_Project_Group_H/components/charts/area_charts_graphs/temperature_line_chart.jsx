@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
 import {
   Card,
@@ -18,16 +18,15 @@ import {
 } from "@/components/ui/chart"
 
 const chartConfig = {
-  humidity: {
-    label: "Humidity (%)",
-    color: "hsl(var(--chart-humidity))",
+  temperature: {
+    label: "Temperature (°C)",
+    color: "hsl(var(--chart-temperature))", // Using a different chart color
   },
 }
 
 export function ChartArea() {
   const [chartData, setChartData] = React.useState([])
   const [loading, setLoading] = React.useState(true)
-  const [lastUpdate, setLastUpdate] = React.useState(null)
 
   React.useEffect(() => {
     const fetchData = async (isInitial = false) => {
@@ -36,77 +35,68 @@ export function ChartArea() {
         const response = await fetch(`/api/supabase-data?t=${Date.now()}`, { cache: 'no-store' })
         if (!response.ok) throw new Error(`Failed to fetch: ${response.statusText}`)
         const data = await response.json()
-        setLastUpdate(new Date())
         
-        console.log('API Response:', data)
         if (!data || data.length === 0) {
-          console.log('No data returned from API. Setting chart data to empty.')
           setChartData([])
           return
         }
-        
-        console.log('Sample record from API:', data[0])
       
-        const hourlyData = {}
+        const intervalData = {}
         data.forEach((item, index) => {
-          // --- Start of per-item validation ---
-          if (!item || typeof item !== 'object') {
-            console.warn(`Record at index ${index} is not a valid object.`, item)
-            return
-          }
           const timestamp = item.timestamp || item.created_at
-          if (!timestamp || !item.humidity) {
-            console.warn(`Skipping record at index ${index} due to missing 'timestamp/created_at' or 'humidity'.`, item)
-            return
+          if (!timestamp || item.temperature === undefined || item.temperature === null) {
+            return // Skip if essential data is missing
           }
           const date = new Date(timestamp)
           if (isNaN(date.getTime())) {
-            console.warn(`Skipping record at index ${index} due to invalid date format for 'created_at'.`, item)
-            return
+            return // Skip if the date is invalid
           }
 
+          // Group data into 10-minute intervals
           const minutes = Math.floor(date.getMinutes() / 10) * 10
           const timeKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
           
-          if (!hourlyData[timeKey]) {
-            hourlyData[timeKey] = { sum: 0, count: 0 }
+          if (!intervalData[timeKey]) {
+            intervalData[timeKey] = { sum: 0, count: 0 }
           }
-          hourlyData[timeKey].sum += parseFloat(item.humidity)
-          hourlyData[timeKey].count += 1
+          intervalData[timeKey].sum += parseFloat(item.temperature)
+          intervalData[timeKey].count += 1
         })
         
-        const timeAverages = Object.entries(hourlyData).map(([time, data]) => ({
+        const timeAverages = Object.entries(intervalData).map(([time, data]) => ({
           hour: time,
-          humidity: parseFloat((data.sum / data.count).toFixed(2))
+          temperature: parseFloat((data.sum / data.count).toFixed(2))
         }))
         
         timeAverages.sort((a, b) => new Date(a.hour) - new Date(b.hour))
-        const recentData = timeAverages.slice(-50)
+        const recentData = timeAverages.slice(-50) // Get the last 50 data points
         
-        console.log('Final processed chart data has', recentData.length, 'time intervals.')
         setChartData(recentData)
 
       } catch (error) {
         console.error('An error occurred in fetchData:', error)
-        setChartData([]) // Ensure data is cleared on error
+        setChartData([])
       } finally {
         if (isInitial) setLoading(false)
       }
     }
     
     fetchData(true)
-    const interval = setInterval(() => fetchData(false), 5000) // Update every 5 seconds
+    const interval = setInterval(() => fetchData(false), 5000) // Auto-update every 5 seconds
     return () => clearInterval(interval)
   }, [])
 
   return (
     <Card className="py-0">
       <CardHeader className="px-6 pt-4 pb-3">
-        <CardTitle>Humidity Bar Chart</CardTitle>
+        <CardTitle>Temperature Line Chart</CardTitle>
+        <CardDescription>
+            Average temperature readings, updated every 5 seconds.
+        </CardDescription>
       </CardHeader>
       <CardContent className="px-2 sm:p-6">
         {loading ? (
-          <div className="flex items-center justify-center h-[250px]">Loading humidity data...</div>
+          <div className="flex items-center justify-center h-[250px]">Loading temperature data...</div>
         ) : chartData.length === 0 ? (
           <div className="flex items-center justify-center h-[250px]">No data available</div>
         ) : (
@@ -114,17 +104,30 @@ export function ChartArea() {
             config={chartConfig}
             className="aspect-auto h-[250px] w-full"
           >
-            <BarChart
+            <AreaChart
               data={chartData}
-              margin={{ left: 12, right: 12 }}
+              margin={{ left: 12, right: 12, top: 10, bottom: 0 }}
             >
+              <defs>
+                <linearGradient id="fillTemperature" x1="0" y1="0" x2="0" y2="1">
+                  <stop
+                    offset="5%"
+                    stopColor="hsl(var(--chart-temperature))"
+                    stopOpacity={0.8}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor="hsl(var(--chart-temperature))"
+                    stopOpacity={0.1}
+                  />
+                </linearGradient>
+              </defs>
               <CartesianGrid vertical={false} />
               <XAxis
                 dataKey="hour"
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
-                minTickGap={32}
                 tickFormatter={(value) => {
                     const hour = value.split(' ')[1];
                     return hour;
@@ -134,10 +137,11 @@ export function ChartArea() {
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
-                domain={['dataMin - 5', 'dataMax + 5']} // Give some vertical padding
+                domain={['dataMin - 2', 'dataMax + 2']} // Give some vertical padding
+                tickFormatter={(value) => `${value}°`}
               />
               <ChartTooltip
-                cursor={false}
+                cursor={true}
                 content={
                   <ChartTooltipContent
                     labelFormatter={(value) => {
@@ -149,11 +153,18 @@ export function ChartArea() {
                             minute: '2-digit'
                         });
                     }}
+                    indicator="dot"
                   />
                 }
               />
-              <Bar dataKey="humidity" fill="var(--color-humidity)" radius={4} />
-            </BarChart>
+              <Area
+                dataKey="temperature"
+                type="monotone"
+                stroke="hsl(var(--chart-temperature))"
+                strokeWidth={2}
+                fill="url(#fillTemperature)"
+              />
+            </AreaChart>
           </ChartContainer>
         )}
       </CardContent>

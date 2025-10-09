@@ -24,7 +24,7 @@ const chartConfig = {
   },
 }
 
-export function ChartArea() {
+export function HumidityBarChart() {
   const [chartData, setChartData] = React.useState([])
   const [loading, setLoading] = React.useState(true)
   const [lastUpdate, setLastUpdate] = React.useState(null)
@@ -124,7 +124,6 @@ export function ChartArea() {
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
-                minTickGap={32}
                 tickFormatter={(value) => {
                     const hour = value.split(' ')[1];
                     return hour;
