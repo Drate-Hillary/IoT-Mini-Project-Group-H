@@ -9,22 +9,22 @@
         "dev_addr": "260BD670"
     },
     "correlation_ids": [
-        "gs:uplink:01K74ZVJMV3NFB9CSFYBV59WQ0"
+        "gs:uplink:01K750DWD6NZCB59HXGGM6RRHT"
     ],
-    "received_at": "2025-10-09T17:21:17.158911512Z",
+    "received_at": "2025-10-09T17:31:16.978462293Z",
     "uplink_message": {
         "session_key_id": "AZmoT8OzeIcFPG5iE7vWbA==",
         "f_port": 2,
-        "f_cnt": 1689,
-        "frm_payload": "zAcKBAKfDgAAG5g=",
+        "f_cnt": 1690,
+        "frm_payload": "zAcKCQKhDgAAG5g=",
         "decoded_payload": {
             "Exti_pin_level": "No activity",
             "Work_mode": "PIR Sensor",
             "field1": 3.079,
             "field2": 3,
-            "field3": 67.1,
+            "field3": 67.3,
             "field4": 7064,
-            "field5": 25.64
+            "field5": 25.69
         },
         "rx_metadata": [
             {
@@ -32,19 +32,20 @@
                     "gateway_id": "bdata-lg308n-gw1",
                     "eui": "A84041FFFF286E34"
                 },
-                "time": "2025-10-09T17:21:16.822929Z",
-                "timestamp": 2199770871,
+                "time": "2025-10-09T17:31:16.644094Z",
+                "timestamp": 2799596123,
                 "rssi": -39,
                 "channel_rssi": -39,
                 "snr": 13.8,
-                "frequency_offset": "-456",
+                "frequency_offset": "-460",
                 "location": {
                     "latitude": 0.3069107306940695,
                     "longitude": 32.553485794742954,
                     "source": "SOURCE_REGISTRY"
                 },
-                "uplink_token": "Ch4KHAoQYmRhdGEtbGczMDhuLWd3MRIIqEBB//8objQQ9633mAgaDAiM3p/HBhCcnLTHAyDY6b7kgrcD",
-                "received_at": "2025-10-09T17:21:16.955059740Z"
+                "uplink_token": "Ch4KHAoQYmRhdGEtbGczMDhuLWd3MRIIqEBB//8objQQ2+T5tgoaDAjk4p/HBhD2r4/xAiD45rqnvcgD",
+                "channel_index": 1,
+                "received_at": "2025-10-09T17:31:16.774100982Z"
             }
         ],
         "settings": {
@@ -55,11 +56,11 @@
                     "coding_rate": "4/5"
                 }
             },
-            "frequency": "868100000",
-            "timestamp": 2199770871,
-            "time": "2025-10-09T17:21:16.822929Z"
+            "frequency": "868300000",
+            "timestamp": 2799596123,
+            "time": "2025-10-09T17:31:16.644094Z"
         },
-        "received_at": "2025-10-09T17:21:16.955884575Z",
+        "received_at": "2025-10-09T17:31:16.775456635Z",
         "consumed_airtime": "0.061696s",
         "version_ids": {
             "brand_id": "dragino",

@@ -4,12 +4,11 @@ import matplotlib.pyplot as plt
 from sklearn.linear_model import Ridge, Lasso
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+import os
+from dotenv import load_dotenv
+from supabase import create_client, Client
 
 def create_features_smart(df, is_train=True, train_stats=None):
-    """
-    Create features while preserving maximum data
-    Fill initial NaN values intelligently instead of dropping them
-    """
     df_features = df.copy()
     
     # Basic time features (no NaN created)
@@ -63,14 +62,35 @@ def optimize_forecasting_model():
     """
     Optimized forecasting that uses ALL available data
     """
-    # Load data
-    try:
-        df = pd.read_csv('thingspeak_historical_data.csv')
-    except FileNotFoundError:
-        print("Error: 'thingspeak_historical_data.csv' not found.")
+    # Load data from Supabase
+    load_dotenv(os.path.join(os.path.dirname(__file__), "../../.env"))
+    SUPABASE_URL = os.getenv("NEXT_PUBLIC_SUPABASE_URL")
+    SUPABASE_KEY = os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+    
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        print("Error: Supabase credentials not found in .env file")
         return None
-
-    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    
+    print("Fetching data from Supabase...")
+    all_data = []
+    page_size = 1000
+    offset = 0
+    
+    while True:
+        response = supabase.table("sensor_data").select("*").order("entry_id", desc=False).range(offset, offset + page_size - 1).execute()
+        if not response.data:
+            break
+        all_data.extend(response.data)
+        if len(response.data) < page_size:
+            break
+        offset += page_size
+    
+    print(f"Fetched {len(all_data)} records from Supabase")
+    
+    df = pd.DataFrame(all_data)
+    df['timestamp'] = pd.to_datetime(df['timestamp'] if 'timestamp' in df.columns else df['created_at'], format='ISO8601')
     df.set_index('timestamp', inplace=True)
     
     # Check for missing values
@@ -182,14 +202,14 @@ def optimize_forecasting_model():
     
     models = {
         'Baseline (Mean)': None,
-        'Ridge α=0.001': Ridge(alpha=0.001, max_iter=10000),
-        'Ridge α=0.01': Ridge(alpha=0.01, max_iter=10000),
-        'Ridge α=0.1': Ridge(alpha=0.1, max_iter=10000),
-        'Ridge α=1.0': Ridge(alpha=1.0, max_iter=10000),
-        'Ridge α=10.0': Ridge(alpha=10.0, max_iter=10000),
-        'Lasso α=0.001': Lasso(alpha=0.001, max_iter=10000),
-        'Lasso α=0.01': Lasso(alpha=0.01, max_iter=10000),
-        'Lasso α=0.1': Lasso(alpha=0.1, max_iter=10000),
+        'Ridge a=0.001': Ridge(alpha=0.001, max_iter=10000),
+        'Ridge a=0.01': Ridge(alpha=0.01, max_iter=10000),
+        'Ridge a=0.1': Ridge(alpha=0.1, max_iter=10000),
+        'Ridge a=1.0': Ridge(alpha=1.0, max_iter=10000),
+        'Ridge a=10.0': Ridge(alpha=10.0, max_iter=10000),
+        'Lasso a=0.001': Lasso(alpha=0.001, max_iter=10000),
+        'Lasso a=0.01': Lasso(alpha=0.01, max_iter=10000),
+        'Lasso a=0.1': Lasso(alpha=0.1, max_iter=10000),
     }
     
     results = []
@@ -228,14 +248,14 @@ def optimize_forecasting_model():
     # Check if baseline is better
     baseline_rmse = results[0]['Val RMSE']
     if best_val_rmse >= baseline_rmse:
-        print(f"\n⚠ WARNING: All models perform worse than baseline!")
+        print(f"\nWARNING: All models perform worse than baseline!")
         print(f"Using baseline prediction (mean = {y_train.mean():.2f}°C)")
         best_model_name = "Baseline (Mean)"
         train_pred = np.full(len(y_train), y_train.mean())
         test_pred = np.full(len(y_test), y_train.mean())
     else:
         print(f"\n{'='*70}")
-        print(f"✓ BEST MODEL: {best_model_name}")
+        print(f"BEST MODEL: {best_model_name}")
         print(f"{'='*70}")
         
         train_pred = best_model.predict(X_train_scaled)
@@ -259,17 +279,17 @@ def optimize_forecasting_model():
     # Interpretation
     print(f"\nINTERPRETATION:")
     if test_r2 > 0.95:
-        print("  ✓✓ Excellent predictions!")
+        print("  [EXCELLENT] Excellent predictions!")
     elif test_r2 > 0.85:
-        print("  ✓ Good predictions")
+        print("  [GOOD] Good predictions")
     elif test_r2 > 0.4:
-        print("  ~ Moderate predictions")
+        print("  [MODERATE] Moderate predictions")
     elif test_r2 > 0.2:
-        print("  ⚠ Weak but useful predictions")
+        print("  [WEAK] Weak but useful predictions")
     elif test_r2 > 0:
-        print("  ⚠ Very weak predictions (barely better than mean)")
+        print("  [WEAK] Very weak predictions (barely better than mean)")
     else:
-        print("  ✗ Poor predictions (worse than predicting mean)")
+        print("  [POOR] Poor predictions (worse than predicting mean)")
     
     print(f"\n  On average, predictions are off by ±{test_mae:.2f}°C")
     print(f"  This is {(test_mae/y_train.std())*100:.1f}% of the temperature variation")
@@ -277,15 +297,13 @@ def optimize_forecasting_model():
     # Visualization
     fig, axes = plt.subplots(2, 2, figsize=(16, 10))
     
-    # Plot 1: Test predictions
+    # Plot 1: Test predictions - Line Graph
     ax1 = axes[0, 0]
-    ax1.plot(y_test.index, y_test.values, 'o-', color='blue', label='Actual', 
-             alpha=0.7, linewidth=2, markersize=5)
-    ax1.plot(y_test.index, test_pred, 's--', color='red', label='Predicted', 
-             alpha=0.8, linewidth=2, markersize=5)
-    ax1.axhline(y=y_train.mean(), color='gray', linestyle=':', alpha=0.5, label='Train Mean')
-    ax1.fill_between(y_test.index, test_pred - test_rmse, test_pred + test_rmse, 
-                      alpha=0.2, color='red', label=f'±RMSE ({test_rmse:.2f}°C)')
+    ax1.plot(y_test.index, y_test.values, '-', color='blue', label='Actual', 
+             alpha=0.8, linewidth=2)
+    ax1.plot(y_test.index, test_pred, '-', color='red', label='Predicted', 
+             alpha=0.8, linewidth=2)
+    ax1.axhline(y=y_train.mean(), color='gray', linestyle='--', linewidth=2, alpha=0.7, label='Train Mean')
     ax1.set_title(f'Temperature Forecast - Test Set\nR²={test_r2:.3f}, RMSE={test_rmse:.2f}°C, MAE={test_mae:.2f}°C', 
                   fontsize=12, fontweight='bold')
     ax1.set_xlabel('Date', fontsize=10)
@@ -294,13 +312,12 @@ def optimize_forecasting_model():
     ax1.grid(True, alpha=0.3)
     ax1.tick_params(axis='x', rotation=45)
     
-    # Plot 2: Full timeline
+    # Plot 2: Full timeline - Line Graph
     ax2 = axes[0, 1]
-    ax2.plot(y_train.index, y_train.values, color='lightblue', label='Train', alpha=0.6, linewidth=1)
-    ax2.plot(y_val.index, y_val.values, color='lightgreen', label='Validation', alpha=0.6, linewidth=1)
-    ax2.plot(y_test.index, y_test.values, color='blue', label='Test (Actual)', alpha=0.8, linewidth=2)
-    ax2.plot(y_test.index, test_pred, 'r--', label='Test (Predicted)', alpha=0.8, linewidth=2)
-    ax2.set_title(f'Complete Timeline (All {len(df_resampled)} samples)', fontsize=12, fontweight='bold')
+    ax2.plot(y_test.index, y_test.values, '-', color='blue', label='Actual', alpha=0.8, linewidth=2)
+    ax2.plot(y_test.index, test_pred, '-', color='red', label='Predicted', alpha=0.8, linewidth=2)
+    ax2.axhline(y=y_train.mean(), color='gray', linestyle='--', linewidth=2, alpha=0.7, label='Train Mean')
+    ax2.set_title(f'Temperature Prediction Comparison', fontsize=12, fontweight='bold')
     ax2.set_xlabel('Date', fontsize=10)
     ax2.set_ylabel('Temperature (°C)', fontsize=10)
     ax2.legend(fontsize=9, loc='best')
@@ -346,8 +363,67 @@ def optimize_forecasting_model():
         ax4.axvline(x=best_idx, color='green', linestyle='--', alpha=0.5, linewidth=3, label='Best')
     
     plt.tight_layout()
-    plt.savefig('temperature_forecast.png', dpi=300, bbox_inches='tight')
-    print(f"\n✓ Visualization saved as 'temperature_forecast.png'")
+    forecast_path = os.path.join(os.path.dirname(__file__), 'temperature_forecast.png')
+    plt.savefig(forecast_path, dpi=300, bbox_inches='tight')
+    print(f"\n[OK] Visualization saved to '{forecast_path}'")
+    
+    # Predict next temperature
+    print(f"\n{'='*70}")
+    print("NEXT TEMPERATURE PREDICTION")
+    print(f"{'='*70}")
+    
+    # Use full dataset to create features, then take the last row
+    full_features, _ = create_features_smart(df_resampled, is_train=False, train_stats=train_stats)
+    last_features = full_features.iloc[[-1]][available_features]
+    last_scaled = scaler.transform(last_features)
+    
+    if best_model is not None:
+        next_temp = best_model.predict(last_scaled)[0]
+    else:
+        next_temp = y_train.mean()
+    
+    current_temp = df_resampled['temperature'].iloc[-1]
+    temp_change = next_temp - current_temp
+    
+    print(f"  Current Temperature:  {current_temp:.2f}°C")
+    print(f"  Predicted Next Temp:  {next_temp:.2f}°C")
+    print(f"  Expected Change:      {temp_change:+.2f}°C")
+    print(f"  Prediction Time:      Next reading")
+    
+    # Save prediction results to JSON
+    prediction_results = {
+        'test_data': [
+            {
+                'index': i,
+                'actual': float(y_test.iloc[i]),
+                'predicted': float(test_pred[i]),
+                'trainMean': float(y_train.mean())
+            }
+            for i in range(len(y_test))
+        ],
+        'metrics': {
+            'test_rmse': float(test_rmse),
+            'test_mae': float(test_mae),
+            'test_r2': float(test_r2),
+            'train_mean': float(y_train.mean()),
+            'train_std': float(y_train.std()),
+            'data_mean': float(df_resampled['temperature'].mean()),
+            'data_std': float(df_resampled['temperature'].std()),
+            'total_samples': int(len(df_resampled)),
+            'temperature_range': float(df_resampled['temperature'].max() - df_resampled['temperature'].min()),
+            'next_prediction': {
+                'current_temp': float(current_temp),
+                'predicted_temp': float(next_temp),
+                'temp_change': float(temp_change)
+            }
+        }
+    }
+    
+    import json
+    results_path = os.path.join(os.path.dirname(__file__), 'prediction_results.json')
+    with open(results_path, 'w') as f:
+        json.dump(prediction_results, f)
+    print(f"\n[OK] Prediction results saved to '{results_path}'")
     
     # Feature importance
     if best_model is not None and hasattr(best_model, 'coef_'):

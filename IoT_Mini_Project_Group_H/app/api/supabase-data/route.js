@@ -6,25 +6,42 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-export async function GET() {
+export async function GET(request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const limitParam = searchParams.get('limit');
+    
+    // If limit is specified, fetch only recent records
+    if (limitParam) {
+      const limit = parseInt(limitParam);
+      const { data, error } = await supabase
+        .from('sensor_data')
+        .select('*')
+        .order('entry_id', { ascending: false })
+        .limit(limit);
+      
+      if (error) throw error;
+      return NextResponse.json(data.reverse());
+    }
+    
+    // Otherwise fetch all data (for table view)
     let allData = [];
     let from = 0;
-    const limit = 1000;
+    const batchLimit = 1000;
     
     while (true) {
       const { data, error } = await supabase
         .from('sensor_data')
         .select('*')
         .order('entry_id', { ascending: true })
-        .range(from, from + limit - 1);
+        .range(from, from + batchLimit - 1);
       
       if (error) throw error;
       if (!data || data.length === 0) break;
       
       allData = [...allData, ...data];
-      if (data.length < limit) break;
-      from += limit;
+      if (data.length < batchLimit) break;
+      from += batchLimit;
     }
     
     return NextResponse.json(allData);

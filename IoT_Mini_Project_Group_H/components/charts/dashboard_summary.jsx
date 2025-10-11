@@ -5,6 +5,7 @@ import SummaryCard from "@/components/charts/data graph/summary_card";
 import { IoThermometerOutline, IoWalkOutline } from 'react-icons/io5';
 import { TfiDashboard } from 'react-icons/tfi';
 import { GiBattery50 } from 'react-icons/gi';
+import { TbSum } from "react-icons/tb";
 
 export const DashboardSummary = () => {
   const [averageData, setAverageData] = useState({

@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { VscLoading } from 'react-icons/vsc';
 import SensorCard from "@/components/charts/incoming_sensor_datasets_card"
-import { ChartArea } from "@/components/charts/area_chart"
+import { ChartArea } from "@/components/charts/sensor_charts"
 import { DataGraphCard } from "@/components/charts/data_graph_card"
 import { DashboardSummary } from '@/components/charts/dashboard_summary';
 
