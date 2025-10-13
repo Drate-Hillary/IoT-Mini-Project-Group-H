@@ -26,13 +26,13 @@ const chartConfig = {
 }
 
 export function TemperaturePredictor() {
-  const [metrics, setMetrics] = useState({ data_mean: 0, data_std: 0, temperature_range: 0, total_samples: 0, test_rmse: 0, test_mae: 0, test_r2: 0, train_mean: 0, predicted_next_temp: 0 })
+  const [metrics, setMetrics] = useState({ data_mean: 0, data_std: 0, temp_min: 0, temp_max: 0, total_samples: 0, test_rmse: 0, test_mae: 0, test_r2: 0, train_mean: 0, predicted_next_temp: 0 })
   
   const getPredictionQuality = (r2) => {
-    if (r2 > 0.95) return { label: 'Excellent Prediction', color: 'bg-emerald-900/40 hover:bg-emerald-900/80 border-emerald-600 text-emerald-400', icon: IoCheckmarkDoneCircleOutline }
-    if (r2 > 0.85) return { label: 'Good Prediction', color: 'bg-blue-900/40 hover:bg-blue-900/80 border-blue-600 text-blue-400', icon: IoCheckmarkDoneCircleOutline }
-    if (r2 > 0.4) return { label: 'Moderate Prediction', color: 'bg-yellow-900/40 hover:bg-yellow-900/80 border-yellow-600 text-yellow-400', icon: IoIosCheckmarkCircleOutline }
-    if (r2 > 0.2) return { label: 'Weak Prediction', color: 'bg-orange-900/40 hover:bg-orange-900/80 border-orange-600 text-orange-400', icon: IoIosCheckmarkCircleOutline }
+    if (r2 > 0.95) return { label: 'Excellent Prediction', color: 'bg-emerald-900 hover:bg-emerald-950', icon: IoCheckmarkDoneCircleOutline }
+    if (r2 > 0.85) return { label: 'Good Prediction', color: 'bg-blue-900 hover:bg-blue-950', icon: IoCheckmarkDoneCircleOutline }
+    if (r2 > 0.4) return { label: 'Moderate Prediction', color: 'bg-yellow-900 hover:bg-yellow-950', icon: IoIosCheckmarkCircleOutline }
+    if (r2 > 0.2) return { label: 'Weak Prediction', color: 'bg-orange-900 hover:bg-orange-950', icon: IoIosCheckmarkCircleOutline }
     if (r2 > 0) return { label: 'Very Weak Prediction', color: 'bg-red-900/40 hover:bg-red-900/80 border-red-600 text-red-400', icon: IoIosCheckmarkCircleOutline }
     return { label: 'Poor Prediction', color: 'bg-red-900/40 hover:bg-red-900/80 border-red-600 text-red-400', icon: IoIosCheckmarkCircleOutline }
   }
@@ -54,7 +54,8 @@ export function TemperaturePredictor() {
             data_mean: predData.metrics.data_mean || 0,
             data_std: predData.metrics.data_std || 0,
             total_samples: predData.metrics.total_samples || 0,
-            temperature_range: predData.metrics.temperature_range || 0,
+            temp_min: predData.metrics.temp_min || 0,
+            temp_max: predData.metrics.temp_max || 0,
             test_rmse: predData.metrics.test_rmse || 0,
             test_mae: predData.metrics.test_mae || 0,
             test_r2: predData.metrics.test_r2 || 0,
@@ -65,6 +66,7 @@ export function TemperaturePredictor() {
       }
     } catch (error) {
       console.error('Error fetching data:', error)
+      toast.error('Error fetching data:', error)
     } finally {
       setLoading(false)
     }
@@ -104,6 +106,16 @@ export function TemperaturePredictor() {
     toast.success('Image downloaded successfully!')
   }
 
+  const downloadPDF = () => {
+    const link = document.createElement('a')
+    link.href = '/api/download-prediction-report'
+    link.download = 'temperature_prediction_report.pdf'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    toast.success('PDF downloaded successfully!')
+  }
+
   useEffect(() => {
     const loadData = async () => {
       await fetchData()
@@ -113,7 +125,7 @@ export function TemperaturePredictor() {
 
   return (
     <div>
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4 mb-4">
+      <div className="grid grid-cols-2 gap-6 md:grid-cols-2 lg:grid-cols-4 mb-4">
         <SummaryCard 
           title="Total Samples"
           value={loading ? "..." : metrics.total_samples.toString()}
@@ -122,7 +134,7 @@ export function TemperaturePredictor() {
         />
         <SummaryCard
           title="Temperature Range"
-          value={loading ? "..." : metrics.temperature_range.toFixed(2)}
+          value={loading ? "..." : `${metrics.temp_min.toFixed(1)} - ${metrics.temp_max.toFixed(2)}`}
           unit=" °C"
           icon={<MdBatchPrediction className="h-8 w-8 text-muted-foreground" />}
         />
@@ -142,14 +154,14 @@ export function TemperaturePredictor() {
 
       <div className={`grid grid-cols-1 gap-6 ${chartData.length > 0 ? 'lg:grid-cols-3' : ''}`}>
         <Card className={chartData.length > 0 ? "lg:col-span-2 shadow-lg" : "shadow-lg"}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0 pb-4">
             <div>
-              <CardTitle>Temperature Prediction Graph</CardTitle>
-              <CardDescription>Actual vs Predicted Temperature with Train Mean</CardDescription>
+              <CardTitle className="text-lg sm:text-xl">Temperature Prediction Graph</CardTitle>
+              <CardDescription className="text-sm">Actual vs Predicted Temperature with Train Mean</CardDescription>
             </div>
             <Button 
               variant="outline" 
-              className="bg-emerald-800 hover:bg-emerald-900 border border-emerald-600"
+              className="bg-emerald-900 hover:bg-emerald-950 border text-white hover:text-white border-emerald-600 w-full sm:w-auto"
               onClick={runPrediction}
               disabled={running}
             >
@@ -164,7 +176,7 @@ export function TemperaturePredictor() {
             ) : chartData.length === 0 ? (
               <div className="flex h-[300px] items-center justify-center">No prediction data available!</div>
             ) : (
-              <ChartContainer config={chartConfig} className="h-[300px] w-full">
+              <ChartContainer config={chartConfig} className="h-[250px] sm:h-[300px] md:h-[350px] w-full">
                 <AreaChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="index" />
@@ -212,10 +224,10 @@ export function TemperaturePredictor() {
                 </Badge>
               )
             })()}
-            <Badge className="h-8 mb-1">
+            <Badge className="h-8 mb-4 text-xs sm:text-sm">
               Predicted Temperature: {loading ? "..." : `${metrics.predicted_next_temp?.toFixed(2) || '0.0000'}°C`}
             </Badge>
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1 space-y-4">
                 <div>
                   <Label htmlFor="train_mean" className="text-sm font-medium">Train Mean:</Label>
@@ -227,7 +239,8 @@ export function TemperaturePredictor() {
                 </div>
               </div>
               
-              <Separator orientation="vertical" className="h-auto" />
+              <Separator orientation="vertical" className="hidden sm:block h-auto" />
+              <Separator className="sm:hidden" />
               
               <div className="flex-1 space-y-4">
                 <div>
@@ -241,13 +254,13 @@ export function TemperaturePredictor() {
               </div>
             </div>
             
-            <div className="flex flex-row justify-between mt-4">
-              <Button variant="outline" className="border border-neutral-800 cursor-pointer">
-                <BsFileEarmarkPdf />
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-0 sm:justify-between mt-4">
+              <Button onClick={downloadPDF} variant="outline" className="border border-neutral-800 cursor-pointer w-full sm:w-auto">
+                <BsFileEarmarkPdf className="mr-2" />
                 Download PDF
               </Button>
-              <Button onClick={downloadPNG} className="bg-emerald-900 hover:bg-emerald-800 text-white cursor-pointer">
-                <IoImagesOutline />
+              <Button onClick={downloadPNG} className="bg-emerald-900 hover:bg-emerald-800 text-white cursor-pointer w-full sm:w-auto">
+                <IoImagesOutline className="mr-2" />
                 Download PNG
               </Button>
             </div>

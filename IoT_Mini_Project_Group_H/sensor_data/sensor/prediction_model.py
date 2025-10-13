@@ -410,7 +410,12 @@ def optimize_forecasting_model():
             'data_mean': float(df_resampled['temperature'].mean()),
             'data_std': float(df_resampled['temperature'].std()),
             'total_samples': int(len(df_resampled)),
+            'train_samples': int(len(df_train_features)),
+            'val_samples': int(len(df_val_features)),
+            'test_samples': int(len(df_test_features)),
             'temperature_range': float(df_resampled['temperature'].max() - df_resampled['temperature'].min()),
+            'temp_min': float(df_resampled['temperature'].min()),
+            'temp_max': float(df_resampled['temperature'].max()),
             'next_prediction': {
                 'current_temp': float(current_temp),
                 'predicted_temp': float(next_temp),

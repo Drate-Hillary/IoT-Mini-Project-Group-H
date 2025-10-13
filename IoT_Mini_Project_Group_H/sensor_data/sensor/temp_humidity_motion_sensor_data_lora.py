@@ -204,7 +204,7 @@ def store_in_supabase(entry_id, battery_voltage, humidity, motion_counts, temper
         print(f"Data stored in Supabase successfully! Entry ID: {entry_id}")
         return True
     except Exception as e:
-        print(f"Error storing data in Supabase: {e}")
+        print(f"Error: {e}")
         return False
 
 # Fetch Historical Data and send to ThingSpeak

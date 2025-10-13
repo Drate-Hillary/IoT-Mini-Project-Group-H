@@ -58,7 +58,7 @@ export default function Home() {
   }
   
   return (
-    <main className="container mx-auto py-12 md:py-24">
+    <main className="container mx-auto py-24 sm:py-12 md:py-24 lg:py-28">
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="lg:col-span-2">
           <DashboardSummary />

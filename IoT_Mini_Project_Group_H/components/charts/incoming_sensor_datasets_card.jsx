@@ -86,7 +86,7 @@ const SensorCard = () => {
   };
 
   return (
-    <Card className="h-[750px] w-full flex flex-col border border-emerald-700/80 shadow-md shadow-emerald-600">
+    <Card className="h-[600px] w-full flex flex-col border border-emerald-700/80 shadow-md shadow-emerald-600">
       <CardHeader>
         <CardTitle className="text-xl font-medium flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex items-center">
@@ -177,7 +177,7 @@ const SensorCard = () => {
           </Popover>
         </CardTitle>
         <CardDescription className="text-sm text-muted-foreground">
-          A log of recent real-time sensor readings from connected devices.
+          A log of recent real-time sensor readings from connected sensor device.
         </CardDescription>
       </CardHeader>
       <Separator />

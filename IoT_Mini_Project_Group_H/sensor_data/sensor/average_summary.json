@@ -1,7 +1,7 @@
 {
-  "timestamp": "2025-10-11T21:15:10.763928",
-  "total_readings": 8000,
-  "average_temperature": 25.2,
-  "average_humidity": 68.45,
-  "average_battery": 3.08
+  "timestamp": "2025-10-13T19:32:37.102097",
+  "average_temperature": 26.33,
+  "average_humidity": 60.23,
+  "average_battery": 3.08,
+  "average_motion": 7185.44
 }

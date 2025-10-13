@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from "react"
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis, } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, } from "@/components/ui/chart"
+import { toast } from "sonner"
 
 // ## 1. Combined Chart Configuration
 // Defines labels and colors for all three data types.
@@ -76,6 +77,7 @@ export function ChartArea() {
 
       } catch (error) {
         console.error("Chart data fetching error:", error)
+        toast.error("Error loading chart data.")
         setChartData([])
       } finally {
         if (isInitial) setLoading(false)
@@ -102,8 +104,8 @@ export function ChartArea() {
       { temperature: 0, humidity: 0, motion_count: 0 }
     )
     return {
-      temperature: `${(totals.temperature / chartData.length).toFixed(1)}°C`,
-      humidity: `${(totals.humidity / chartData.length).toFixed(1)}%`,
+      temperature: `${(totals.temperature / chartData.length).toFixed(2)}°C`,
+      humidity: `${(totals.humidity / chartData.length).toFixed(2)}%`,
       motion_count: totals.motion_count.toLocaleString(),
     }
   }, [chartData])
@@ -112,10 +114,10 @@ export function ChartArea() {
     <Card>
       {/* ## 5. Interactive Header */}
       <CardHeader className="flex flex-col items-stretch border-b p-0 sm:flex-row">
-        <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-4 sm:py-0">
-          <CardTitle>Sensor Chart of Temperature, Humidity, and Motion Counts</CardTitle>
-          <CardDescription>
-            Displaying sensor readings, updated every 5 seconds.
+        <div className="flex flex-1 flex-col justify-center gap-1 px-4 py-3 sm:px-6 sm:py-5">
+          <CardTitle className="text-base sm:text-lg md:text-xl">Sensor Chart of Temperature, Humidity, and Motion Counts</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
+            Displaying sensor readings.
           </CardDescription>
         </div>
         <div className="flex">
@@ -123,13 +125,13 @@ export function ChartArea() {
             <button
               key={key}
               data-active={activeChart === key}
-              className="data-[active=true]:bg-muted/50 relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l sm:border-l sm:border-t-0 sm:px-8 sm:py-6"
+              className="data-[active=true]:bg-muted/80 relative flex flex-1 flex-col justify-center gap-1 border-t px-3 py-3 text-left even:border-l sm:border-l sm:border-t-0 sm:px-6 sm:py-4 md:px-8 md:py-6"
               onClick={() => setActiveChart(key)}
             >
-              <span className="text-muted-foreground text-xs">
+              <span className="text-muted-foreground text-[10px] sm:text-xs">
                 {chartConfig[key].label}
               </span>
-              <span className="text-lg font-bold leading-none sm:text-3xl">
+              <span className="text-sm font-bold leading-none sm:text-lg md:text-2xl lg:text-3xl">
                 {summary[key]}
               </span>
             </button>
