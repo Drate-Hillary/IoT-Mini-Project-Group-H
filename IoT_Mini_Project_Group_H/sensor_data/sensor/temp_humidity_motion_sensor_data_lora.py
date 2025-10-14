@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 import requests
 from supabase import create_client, Client
 import csv
-from average_summary import calculate_and_save_averages
 
 # Load environment variables from .env file
 load_dotenv(os.path.join(os.path.dirname(__file__), "../../.env"))
@@ -63,7 +62,6 @@ def send_to_thingspeak(field1, field3, field4, field5):
         if response.status_code == 200:
             entry_id = int(response.text.strip())
             print(f"Data sent to ThingSpeak successfully! Entry ID: {entry_id}")
-            calculate_and_save_averages()
             return entry_id
         else:
             print(f"Error sending to ThingSpeak. Status code: {response.status_code}")
