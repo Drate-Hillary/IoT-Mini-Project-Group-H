@@ -16,13 +16,23 @@ export async function POST() {
       apiUrl = `https://${apiUrl}`;
     }
     
+    console.log('Calling prediction service:', `${apiUrl}/predict`);
+    
     const response = await fetch(`${apiUrl}/predict`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     });
 
+    console.log('Response status:', response.status);
+
     if (!response.ok) {
-      throw new Error('Prediction service failed');
+      const errorText = await response.text();
+      console.error('Prediction service error:', errorText);
+      return NextResponse.json({ 
+        success: false, 
+        error: `Prediction service failed: ${response.status}`,
+        details: errorText
+      }, { status: 500 });
     }
 
     const result = await response.json();
@@ -30,7 +40,7 @@ export async function POST() {
     if (!result.success) {
       return NextResponse.json({ 
         success: false, 
-        error: result.error 
+        error: result.error || 'Prediction failed'
       }, { status: 500 });
     }
     
@@ -40,9 +50,11 @@ export async function POST() {
       data: result.data
     });
   } catch (error) {
+    console.error('Prediction error:', error);
     return NextResponse.json({ 
       success: false, 
-      error: error.message 
+      error: error.message,
+      stack: error.stack
     }, { status: 500 });
   }
 }

@@ -2,3 +2,8 @@ paho-mqtt
 python-dotenv
 requests
 supabase
+flask
+pandas
+numpy
+scikit-learn
+matplotlib
