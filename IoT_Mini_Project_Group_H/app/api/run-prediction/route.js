@@ -1,44 +1,43 @@
 import { NextResponse } from 'next/server';
-import { spawn } from 'child_process';
-import path from 'path';
 
 export async function POST() {
   try {
-    const pythonScript = path.join(process.cwd(), 'sensor_data', 'sensor', 'prediction_model.py');
+    const apiUrl = process.env.PREDICTION_API_URL;
     
-    return new Promise((resolve) => {
-      const python = spawn('python', [pythonScript]);
-      let output = '';
-      let errorOutput = '';
+    if (!apiUrl) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Prediction service not configured. Set PREDICTION_API_URL in Vercel.' 
+      }, { status: 500 });
+    }
+    
+    const response = await fetch(`${apiUrl}/predict`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
 
-      python.stdout.on('data', (data) => {
-        output += data.toString();
-      });
+    if (!response.ok) {
+      throw new Error('Prediction service failed');
+    }
 
-      python.stderr.on('data', (data) => {
-        errorOutput += data.toString();
-      });
-
-      python.on('close', (code) => {
-        if (code !== 0) {
-          resolve(NextResponse.json({ 
-            success: false, 
-            error: 'Python script failed', 
-            details: errorOutput 
-          }, { status: 500 }));
-          return;
-        }
-
-        resolve(NextResponse.json({ 
-          success: true, 
-          message: 'Prediction model executed successfully'
-        }));
-      });
+    const result = await response.json();
+    
+    if (!result.success) {
+      return NextResponse.json({ 
+        success: false, 
+        error: result.error 
+      }, { status: 500 });
+    }
+    
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Prediction completed successfully',
+      data: result.data
     });
   } catch (error) {
     return NextResponse.json({ 
       success: false, 
-      error: 'Failed to run prediction model'
+      error: error.message 
     }, { status: 500 });
   }
 }
