@@ -2,13 +2,18 @@ import { NextResponse } from 'next/server';
 
 export async function POST() {
   try {
-    const apiUrl = process.env.PREDICTION_API_URL;
+    let apiUrl = process.env.PREDICTION_API_URL;
     
     if (!apiUrl) {
       return NextResponse.json({ 
         success: false, 
         error: 'Prediction service not configured. Set PREDICTION_API_URL in Vercel.' 
       }, { status: 500 });
+    }
+    
+    // Add https:// if missing
+    if (!apiUrl.startsWith('http://') && !apiUrl.startsWith('https://')) {
+      apiUrl = `https://${apiUrl}`;
     }
     
     const response = await fetch(`${apiUrl}/predict`, {
