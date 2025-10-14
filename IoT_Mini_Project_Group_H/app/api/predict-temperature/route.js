@@ -1,21 +1,41 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
 
 export async function GET() {
   try {
-    const resultsPath = path.join(process.cwd(), 'sensor_data', 'sensor', 'prediction_results.json');
+    const apiUrl = process.env.PREDICTION_API_URL;
     
-    if (!fs.existsSync(resultsPath)) {
+    if (!apiUrl) {
       return NextResponse.json({ 
-        error: 'Prediction results not found. Please run prediction_model.py first.' 
-      }, { status: 404 });
+        error: 'Prediction service not configured' 
+      }, { status: 500 });
+    }
+    
+    // Add https:// if missing
+    let predictionUrl = apiUrl;
+    if (!predictionUrl.startsWith('http://') && !predictionUrl.startsWith('https://')) {
+      predictionUrl = `https://${predictionUrl}`;
+    }
+    
+    const response = await fetch(`${predictionUrl}/predict`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    if (!response.ok) {
+      return NextResponse.json({ 
+        error: 'Failed to fetch prediction results' 
+      }, { status: 500 });
     }
 
-    const data = fs.readFileSync(resultsPath, 'utf8');
-    const results = JSON.parse(data);
+    const result = await response.json();
     
-    return NextResponse.json(results);
+    if (!result.success) {
+      return NextResponse.json({ 
+        error: result.error || 'Prediction failed' 
+      }, { status: 500 });
+    }
+    
+    return NextResponse.json(result.data);
   } catch (error) {
     return NextResponse.json({ 
       error: 'Failed to load prediction results',
