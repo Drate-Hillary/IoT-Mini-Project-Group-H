@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"next dev\" \"python sensor_data/sensor/temp_humidity_motion_sensor_data_lora.py\" \"python sensor_data/sensor/fetch_supabase_data.py\" \"python sensor_data/sensor/average_summary.py\"",
+    "dev:frontend": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

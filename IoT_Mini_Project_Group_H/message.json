@@ -9,22 +9,22 @@
         "dev_addr": "260BD670"
     },
     "correlation_ids": [
-        "gs:uplink:01K7H2HXE6FTGNZW4YTR28AGTV"
+        "gs:uplink:01K7HSNV492JN40N4GXJKFC73A"
     ],
-    "received_at": "2025-10-14T09:59:19.445769033Z",
+    "received_at": "2025-10-14T16:43:25.398788729Z",
     "uplink_message": {
         "session_key_id": "AZmoT8OzeIcFPG5iE7vWbA==",
         "f_port": 2,
-        "f_cnt": 2424,
-        "frm_payload": "zAwJ/gLMDgAAHXA=",
+        "f_cnt": 2501,
+        "frm_payload": "zAsJ0AK7DgEAHe4=",
         "decoded_payload": {
-            "Exti_pin_level": "No activity",
+            "Exti_pin_level": "Activity",
             "Work_mode": "PIR Sensor",
-            "field1": 3.084,
+            "field1": 3.083,
             "field2": 3,
-            "field3": 71.6,
-            "field4": 7536,
-            "field5": 25.58
+            "field3": 69.9,
+            "field4": 7662,
+            "field5": 25.12
         },
         "rx_metadata": [
             {
@@ -32,20 +32,20 @@
                     "gateway_id": "bdata-lg308n-gw1",
                     "eui": "A84041FFFF286E34"
                 },
-                "time": "2025-10-14T09:59:19.075157Z",
-                "timestamp": 2664989420,
-                "rssi": -95,
-                "channel_rssi": -95,
-                "snr": 6.2,
-                "frequency_offset": "-445",
+                "time": "2025-10-14T16:43:24.999584Z",
+                "timestamp": 1141092536,
+                "rssi": -87,
+                "channel_rssi": -87,
+                "snr": 8.8,
+                "frequency_offset": "-450",
                 "location": {
                     "latitude": 0.3069107306940695,
                     "longitude": 32.553485794742954,
                     "source": "SOURCE_REGISTRY"
                 },
-                "uplink_token": "Ch4KHAoQYmRhdGEtbGczMDhuLWd3MRIIqEBB//8objQQ7IXi9gkaCwj3vbjHBhDP28FxIODT/e3HkRQ=",
-                "channel_index": 4,
-                "received_at": "2025-10-14T09:59:19.238054863Z"
+                "uplink_token": "Ch4KHAoQYmRhdGEtbGczMDhuLWd3MRIIqEBB//8objQQuOGOoAQaCwit+7nHBhCy/M1bIMCdqfOa0xk=",
+                "channel_index": 5,
+                "received_at": "2025-10-14T16:43:25.192118322Z"
             }
         ],
         "settings": {
@@ -56,12 +56,13 @@
                     "coding_rate": "4/5"
                 }
             },
-            "frequency": "867300000",
-            "timestamp": 2664989420,
-            "time": "2025-10-14T09:59:19.075157Z"
+            "frequency": "867500000",
+            "timestamp": 1141092536,
+            "time": "2025-10-14T16:43:24.999584Z"
         },
-        "received_at": "2025-10-14T09:59:19.239673865Z",
+        "received_at": "2025-10-14T16:43:25.193920926Z",
         "consumed_airtime": "0.061696s",
+        "packet_error_rate": 0.09090909,
         "version_ids": {
             "brand_id": "dragino",
             "model_id": "lht65",

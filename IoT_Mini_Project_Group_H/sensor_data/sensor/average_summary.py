@@ -1,10 +1,11 @@
 import json
 import os
+import time
 from datetime import datetime
 from supabase import create_client, Client
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), "../../.env"))
 
 def calculate_and_save_averages():
     try:
@@ -58,4 +59,12 @@ def calculate_and_save_averages():
     except Exception as e:
         print(f"Error: {e}")
         return None
+
+if __name__ == "__main__":
+    print("Starting average summary calculator...")
+    print("Calculating averages every 60 seconds...")
+    
+    while True:
+        calculate_and_save_averages()
+        time.sleep(60)  # Update every 60 seconds
 
