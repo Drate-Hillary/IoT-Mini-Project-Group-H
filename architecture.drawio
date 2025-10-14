@@ -1,0 +1,31 @@
+<mxfile host="65bd71144e">
+    <diagram id="ekm0z12lLJynHr_SCGEg" name="Page-1">
+        <mxGraphModel dx="467" dy="456" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="31" value="&lt;p style=&quot;margin-bottom:6.0pt;line-height:normal&quot; class=&quot;MsoNormal&quot;&gt;&lt;span style=&quot;font-size:10.5pt;mso-fareast-font-family:&amp;quot;Times New Roman&amp;quot;;mso-bidi-font-family:&lt;br/&gt;Calibri;mso-bidi-theme-font:minor-latin;border:none windowtext 1.0pt;&lt;br/&gt;mso-border-alt:none windowtext 0cm;padding:0cm&quot;&gt;IoT_Mini_Project_Group_H/&lt;/span&gt;&lt;/p&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+                    <mxGeometry x="60" y="52" width="199" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="35" value="" style="endArrow=none;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" target="31">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="160" y="1080.952392578125" as="sourcePoint"/>
+                        <mxPoint x="170" y="90" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="160" y="120"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="36" value="" style="endArrow=none;html=1;" edge="1" parent="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="160" y="120" as="sourcePoint"/>
+                        <mxPoint x="210" y="120" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="37" value="&lt;span style=&quot;font-size:10.5pt;line-height:107%;&lt;br/&gt;font-family:&amp;quot;Calibri&amp;quot;,&amp;quot;sans-serif&amp;quot;;mso-ascii-theme-font:minor-latin;mso-fareast-font-family:&lt;br/&gt;&amp;quot;Times New Roman&amp;quot;;mso-hansi-theme-font:minor-latin;mso-bidi-theme-font:minor-latin;&lt;br/&gt;border:none windowtext 1.0pt;mso-border-alt:none windowtext 0cm;padding:0cm;&lt;br/&gt;mso-ansi-language:EN-US;mso-fareast-language:EN-US;mso-bidi-language:AR-SA&quot;&gt;app/&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+                    <mxGeometry x="210" y="100" width="60" height="30" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

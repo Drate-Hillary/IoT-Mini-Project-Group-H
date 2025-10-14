@@ -59,7 +59,7 @@ def monitor_db_updates(interval=30):
         if data is not None:
             current_count = len(data)
             if current_count != last_count:
-                print(f"\n✓ Data updated! New total: {current_count} records")
+                print(f"\n[OK] Data updated! New total: {current_count} records")
                 print(f"Latest entry: {data[-1]}")
                 last_count = current_count
         

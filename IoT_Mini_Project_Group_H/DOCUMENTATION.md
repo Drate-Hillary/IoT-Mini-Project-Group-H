@@ -7,11 +7,12 @@
 4. [Features](#features)
 5. [Installation & Setup](#installation--setup)
 6. [System Components](#system-components)
-7. [API Endpoints](#api-endpoints)
-8. [Machine Learning Model](#machine-learning-model)
-9. [Data Flow](#data-flow)
-10. [User Guide](#user-guide)
-11. [Troubleshooting](#troubleshooting)
+7. [Python Scripts](#python-scripts)
+8. [API Endpoints](#api-endpoints)
+9. [Machine Learning Model](#machine-learning-model)
+10. [Data Flow](#data-flow)
+11. [User Guide](#user-guide)
+12. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -20,6 +21,8 @@
 The IoT Temperature Prediction System is a full-stack web application that collects, visualizes, and predicts temperature data from IoT sensors. The system uses machine learning (Ridge/Lasso regression) to forecast future temperature readings with high accuracy.
 
 ### Key Capabilities
+- Real-time sensor data collection via LoRa/TTN
+- Automatic data synchronization to ThingSpeak and Supabase
 - Real-time sensor data visualization
 - Temperature prediction using ML models
 - Historical data analysis
@@ -31,6 +34,30 @@ The IoT Temperature Prediction System is a full-stack web application that colle
 ## Architecture
 
 ```
+┌─────────────────────────────────────────────────────────────┐
+│                  IoT Sensor (LoRa Device)                    │
+│              lht65n-01-temp-humidity-sensor                  │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│              The Things Network (TTN) Gateway                │
+│                  eu1.cloud.thethings.network                 │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│         Python Data Collection Script (MQTT Client)          │
+│       temp_humidity_motion_sensor_data_lora.py               │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                ┌───────────┼───────────┐
+                ↓           ↓           ↓
+        ┌──────────┐  ┌──────────┐  ┌──────────┐
+        │ThingSpeak│  │ Supabase │  │CSV Files │
+        └──────────┘  └──────────┘  └──────────┘
+                            │
+                            ↓
 ┌─────────────────────────────────────────────────────────────┐
 │                     Frontend (Next.js 15)                    │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
@@ -46,13 +73,11 @@ The IoT Temperature Prediction System is a full-stack web application that colle
 │  └──────────────┘  └──────────────┘  └──────────────┘      │
 └─────────────────────────────────────────────────────────────┘
                             │
-                ┌───────────┴───────────┐
-                ↓                       ↓
-┌──────────────────────────┐  ┌──────────────────────────┐
-│   Supabase Database      │  │  Python ML Model         │
-│  - sensor_data table     │  │  - Ridge Regression      │
-│  - Real-time updates     │  │  - Feature Engineering   │
-└──────────────────────────┘  └──────────────────────────┘
+                            ↓
+                  ┌──────────────────────┐
+                  │  Python ML Model     │
+                  │  Ridge Regression    │
+                  └──────────────────────┘
 ```
 
 ---
@@ -64,14 +89,22 @@ The IoT Temperature Prediction System is a full-stack web application that colle
 - **Styling**: Tailwind CSS
 - **UI Components**: shadcn/ui
 - **Charts**: Recharts
-- **Icons**: React Icons
+- **Icons**: React Icons, Lucide React
 - **Notifications**: Sonner
+- **Theme**: next-themes
 
 ### Backend
 - **Runtime**: Node.js
 - **API**: Next.js API Routes
 - **Database**: Supabase (PostgreSQL)
 - **PDF Generation**: jsPDF
+- **Process Manager**: Concurrently
+
+### IoT & Data Collection
+- **Protocol**: MQTT (paho-mqtt)
+- **Gateway**: The Things Network (TTN)
+- **Cloud Storage**: ThingSpeak, Supabase
+- **Local Storage**: CSV files
 
 ### Machine Learning
 - **Language**: Python 3.x
@@ -80,6 +113,8 @@ The IoT Temperature Prediction System is a full-stack web application that colle
   - numpy (numerical operations)
   - scikit-learn (ML models)
   - matplotlib (visualization)
+  - python-dotenv (environment variables)
+  - supabase-py (database client)
 - **Models**: Ridge Regression, Lasso Regression
 
 ---
@@ -90,12 +125,14 @@ The IoT Temperature Prediction System is a full-stack web application that colle
 - Real-time sensor metrics (Temperature, Humidity, Battery, Motion)
 - Summary cards with average values
 - Responsive grid layout
+- Auto-refresh capability
 
 ### 2. Data Visualization
 - Area charts with gradient fills
 - Line charts for sensor data
 - Interactive tooltips
 - Responsive chart sizing
+- Historical data trends
 
 ### 3. Temperature Prediction
 - ML-based temperature forecasting
@@ -108,11 +145,18 @@ The IoT Temperature Prediction System is a full-stack web application that colle
 - PDF report generation with full metrics
 - PNG chart download
 - Detailed prediction statistics
+- CSV data export
 
 ### 5. Responsive Design
 - Mobile-first approach
 - Tablet optimization
 - Desktop full-feature experience
+
+### 6. Real-time Data Collection
+- MQTT-based live data streaming
+- Automatic historical data sync
+- Duplicate detection
+- Multi-platform storage
 
 ---
 
@@ -124,6 +168,7 @@ The IoT Temperature Prediction System is a full-stack web application that colle
 - Python 3.8+
 - npm or yarn
 - Supabase account
+- ThingSpeak account (optional)
 ```
 
 ### Step 1: Clone Repository
@@ -141,12 +186,16 @@ npm install
 
 **Python Environment:**
 ```bash
-cd sensor_data/sensor
 python -m venv venv
 venv\Scripts\activate  # Windows
 source venv/bin/activate  # Unix/Mac
-pip install pandas numpy scikit-learn matplotlib python-dotenv supabase
+pip install -r requirements.txt
 ```
+
+**Required Python packages:**
+- pandas, numpy, scikit-learn, matplotlib
+- python-dotenv, supabase
+- paho-mqtt, requests
 
 ### Step 3: Environment Configuration
 
@@ -154,6 +203,9 @@ Create `.env` file in root directory:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_URL=your_supabase_url
+SUPABASE_KEY=your_supabase_anon_key
+WEATHER_API_KEY=your_weather_api_key
 ```
 
 ### Step 4: Database Setup
@@ -161,12 +213,13 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 Create Supabase table:
 ```sql
 CREATE TABLE sensor_data (
-  entry_id SERIAL PRIMARY KEY,
+  entry_id INTEGER PRIMARY KEY,
   temperature FLOAT,
   humidity FLOAT,
-  battery FLOAT,
-  motion INTEGER,
-  timestamp TIMESTAMPTZ DEFAULT NOW(),
+  battery_voltage FLOAT,
+  motion_counts INTEGER,
+  timestamp TIMESTAMPTZ,
+  data_type TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ```
@@ -175,6 +228,12 @@ CREATE TABLE sensor_data (
 ```bash
 npm run dev
 ```
+
+This command will automatically start:
+- Next.js development server (port 3000)
+- Python sensor data collection script
+- Python Supabase data fetcher
+- Python average summary calculator
 
 Access at: `http://localhost:3000`
 
@@ -216,6 +275,149 @@ Access at: `http://localhost:3000`
 
 ---
 
+## Python Scripts
+
+### 1. **`temp_humidity_motion_sensor_data_lora.py`**
+Main sensor data collection script that handles real-time and historical data.
+
+**Location:** `sensor_data/sensor/`
+
+**Features:**
+- MQTT connection to The Things Network (TTN)
+- Real-time sensor data collection via MQTT
+- Historical data fetching from TTN API (48 hours)
+- Data transmission to ThingSpeak
+- Data storage in Supabase with entry_id as primary key
+- CSV file generation for local backup
+- Duplicate detection and filtering
+- Automatic average calculation trigger
+
+**Configuration:**
+- Broker: `eu1.cloud.thethings.network`
+- Port: 1883 (MQTT)
+- Device: `lht65n-01-temp-humidity-sensor`
+- ThingSpeak Channel: 3085407
+- Rate Limit: 15 seconds between ThingSpeak updates
+
+**Data Flow:**
+```
+IoT Sensor → TTN → MQTT → Script → ThingSpeak → Supabase → CSV
+```
+
+**Key Functions:**
+- `on_connect()`: MQTT connection handler
+- `on_message()`: Real-time message processor
+- `send_to_thingspeak()`: Sends data to ThingSpeak API, returns entry_id
+- `store_in_supabase()`: Stores data with entry_id as primary key
+- `append_to_csv()`: Appends data to local CSV file
+- `get_historical_sensor_data()`: Fetches 48h historical data from TTN
+- `fetch_thingspeak_to_csv()`: Downloads all ThingSpeak data (8000 max)
+- `fetch_thingspeak_to_supabase()`: Transfers ThingSpeak data to Supabase
+- `data_has_changed()`: Filters duplicate readings (0.1°C threshold)
+- `format_timestamp()`: Converts timestamps to ISO format
+
+**Output Files:**
+- `thingspeak_historical_data.csv`: All sensor readings
+- `message.json`: Latest MQTT message
+- `message_history.json`: Historical messages from TTN
+
+**Sensor Data Fields:**
+- `field1`: Battery voltage (V)
+- `field3`: Humidity (%)
+- `field4`: Motion counts
+- `field5`: Temperature (°C)
+
+**Usage:**
+```bash
+python temp_humidity_motion_sensor_data_lora.py
+```
+
+### 2. **`fetch_supabase_data.py`**
+Monitors Supabase database for updates and provides data access.
+
+**Location:** `sensor_data/sensor/`
+
+**Features:**
+- Real-time database monitoring (30-second interval)
+- Paginated data fetching (1000 records per page)
+- Entry count tracking
+- Missing entry detection
+- JSON export capability
+- Console notifications for new data
+
+**Key Functions:**
+- `monitor_db_updates(interval=30)`: Continuous monitoring loop
+- `fetch_all_db_data()`: Retrieves all records with pagination
+- `count_db_entries()`: Returns total record count
+- `get_max_entry_id()`: Finds highest entry_id
+
+**Usage:**
+```bash
+python fetch_supabase_data.py              # Monitor mode (default)
+python fetch_supabase_data.py --json       # Export all data as JSON
+python fetch_supabase_data.py --count      # Show statistics
+```
+
+**Output:**
+```
+Monitoring database for updates every 30 seconds...
+Total entries fetched: 11259
+
+[OK] Data updated! New total: 11260 records
+Latest entry: {...}
+```
+
+### 3. **`average_summary.py`**
+Calculates and saves average sensor metrics.
+
+**Location:** `sensor_data/sensor/`
+
+**Features:**
+- Fetches latest 8000 records from Supabase
+- Calculates averages for all sensor readings
+- Generates JSON summary file
+- Automatic execution after new data collection
+- Error handling and validation
+
+**Key Functions:**
+- `calculate_and_save_averages()`: Main calculation function
+
+**Output File:**
+- `average_summary.json`: Contains average metrics
+
+**Output Format:**
+```json
+{
+  "timestamp": "2025-01-10T12:00:00",
+  "average_temperature": 25.4,
+  "average_humidity": 58.3,
+  "average_battery": 3.65,
+  "average_motion": 2.1
+}
+```
+
+**Usage:**
+```bash
+python average_summary.py
+```
+
+### 4. **`prediction_model.py`**
+Machine learning model for temperature prediction.
+
+**Location:** `sensor_data/sensor/`
+
+**Features:**
+- Ridge/Lasso regression models
+- 13 engineered features
+- 70/15/15 train/validation/test split
+- Model comparison and selection
+- Visualization generation (4 subplots)
+- Next temperature prediction
+
+**See [Machine Learning Model](#machine-learning-model) section for details.**
+
+---
+
 ## API Endpoints
 
 ### GET `/api/sensor-data`
@@ -228,15 +430,16 @@ Fetches all sensor data from Supabase.
     "entry_id": 1,
     "temperature": 25.5,
     "humidity": 60.2,
-    "battery": 3.7,
-    "motion": 1,
-    "timestamp": "2025-01-10T12:00:00Z"
+    "battery_voltage": 3.7,
+    "motion_counts": 1,
+    "timestamp": "2025-01-10T12:00:00Z",
+    "data_type": "real-time"
   }
 ]
 ```
 
 ### GET `/api/average-data`
-Returns average sensor metrics.
+Returns average sensor metrics from `average_summary.json`.
 
 **Response:**
 ```json
@@ -244,12 +447,13 @@ Returns average sensor metrics.
   "average_temperature": 25.4,
   "average_humidity": 58.3,
   "average_battery": 3.65,
+  "average_motion": 2.1,
   "total_readings": 9853
 }
 ```
 
 ### GET `/api/predict-temperature`
-Returns prediction results from JSON file.
+Returns prediction results from `prediction_results.json`.
 
 **Response:**
 ```json
@@ -369,111 +573,173 @@ Selection Criteria:
 
 ## Data Flow
 
-### 1. Data Collection
+### 1. Data Collection Flow
 ```
-IoT Sensor → Supabase → API → Frontend Dashboard
+IoT Sensor (LoRa)
+    ↓
+The Things Network (TTN)
+    ↓
+MQTT Broker (eu1.cloud.thethings.network)
+    ↓
+temp_humidity_motion_sensor_data_lora.py
+    ↓
+    ├→ ThingSpeak API (Entry ID generation)
+    ├→ Supabase Database (Primary storage)
+    └→ CSV File (Local backup)
+    ↓
+average_summary.py (Auto-triggered)
+    ↓
+average_summary.json
 ```
 
-### 2. Prediction Workflow
+### 2. Real-time Monitoring Flow
+```
+fetch_supabase_data.py (30s interval)
+    ↓
+Supabase Database
+    ↓
+Console Output (New entries detected)
+```
+
+### 3. Dashboard Data Flow
+```
+Frontend Component
+    ↓
+API Route (/api/sensor-data)
+    ↓
+Supabase Client
+    ↓
+Database Query
+    ↓
+JSON Response
+    ↓
+Recharts Visualization
+```
+
+### 4. Prediction Workflow
 ```
 User clicks "Run Prediction"
     ↓
-Frontend calls /api/run-prediction
+Frontend → /api/run-prediction
     ↓
-API spawns Python process
+Execute Python script (prediction_model.py)
     ↓
-Python fetches data from Supabase
+Fetch data from Supabase
     ↓
-Feature engineering & model training
+Feature Engineering (13 features)
     ↓
-Predictions saved to JSON
+Model Training & Validation
     ↓
-Frontend fetches results
+Generate prediction_results.json
     ↓
-Display charts & metrics
+Generate temperature_forecast.png
+    ↓
+Return success response
+    ↓
+Frontend fetches /api/predict-temperature
+    ↓
+Display results & charts
 ```
 
-### 3. Report Generation
+### 5. Startup Flow (npm run dev)
 ```
-User clicks "Download PDF"
+npm run dev
     ↓
-Frontend calls /api/download-prediction-report
-    ↓
-API reads prediction_results.json
-    ↓
-jsPDF generates PDF document
-    ↓
-Browser downloads file
+Concurrently starts:
+    ├→ next dev (Port 3000)
+    ├→ temp_humidity_motion_sensor_data_lora.py
+    ├→ fetch_supabase_data.py
+    └→ average_summary.py
 ```
 
 ---
 
 ## User Guide
 
-### Running a Prediction
+### Starting the System
 
-1. Navigate to the Temperature Predictor page
-2. Click **"Run Prediction"** button
-3. Wait for model to train (loading toast appears)
-4. View results:
-   - Summary cards update with latest metrics
-   - Chart displays actual vs predicted temperatures
-   - Quality badge shows prediction accuracy
-   - More Info card shows detailed metrics
+1. **Activate Python Environment:**
+```bash
+venv\Scripts\activate  # Windows
+```
 
-### Understanding Metrics
+2. **Start All Services:**
+```bash
+npm run dev
+```
 
-- **Test RMSE**: Root Mean Square Error (lower is better)
-- **Test MAE**: Mean Absolute Error (average prediction error)
-- **Test R²**: Coefficient of determination (closer to 1 is better)
-- **Train Mean**: Average temperature in training set
-- **Predicted Temperature**: Next forecasted reading
+This automatically starts:
+- Next.js frontend (http://localhost:3000)
+- MQTT sensor data collector
+- Database monitor
+- Average calculator
 
-### Downloading Reports
+### Using the Dashboard
 
-**PNG Chart:**
-1. Click "Download PNG" button
-2. File saves as `temperature_forecast.png`
-3. Contains 4 subplots: predictions, comparison, residuals, model comparison
+1. **View Real-time Data:**
+   - Navigate to homepage
+   - View summary cards (Temperature, Humidity, Battery, Motion)
+   - Scroll to see historical charts
 
-**PDF Report:**
-1. Click "Download PDF" button
-2. File saves as `temperature_prediction_report.pdf`
-3. Includes: Data overview, sample sizes, performance metrics, interpretation, next prediction
+2. **Run Temperature Prediction:**
+   - Click "Temperature Prediction" tab
+   - Click "Run Prediction" button
+   - Wait for model training (30-60 seconds)
+   - View results and metrics
+
+3. **Download Reports:**
+   - Click "Download PDF Report" for full metrics
+   - Click "Download Forecast Image" for PNG chart
+
+### Monitoring Data Collection
+
+**Console Output:**
+```
+Connected to TTN MQTT broker!
+Subscribed to topic: v3/bd-test-app2@ttn/devices/lht65n-01-temp-humidity-sensor/up
+[2025-01-10T12:00:00Z] Real-time - Temp: 25.5°C, Humidity: 60.2%, Battery: 3.7V, Motion: 1
+Data sent to ThingSpeak successfully! Entry ID: 11260
+Data stored in Supabase successfully! Entry ID: 11260
+Data appended to CSV file! Entry ID: 11260
+```
 
 ---
 
 ## Troubleshooting
 
-### Issue: "Prediction failed" error
+### Issue: Python scripts not starting
 **Solution:**
-- Ensure Python virtual environment is activated
-- Check Supabase credentials in `.env`
-- Verify database has sufficient data (>100 records recommended)
+- Ensure virtual environment is activated
+- Check `.env` file has correct credentials
+- Verify Python packages installed: `pip install -r requirements.txt`
 
-### Issue: Charts not displaying
+### Issue: MQTT connection failed
 **Solution:**
-- Run prediction first to generate data
-- Check browser console for errors
-- Verify `prediction_results.json` exists in `sensor_data/sensor/`
+- Check TTN credentials in script
+- Verify network connectivity
+- Ensure broker URL is correct
 
-### Issue: 500 Error on `/api/average-data`
+### Issue: Supabase connection error
 **Solution:**
-- Check if `average_summary.json` exists
-- API now returns default values if file missing
-- Run `average_summary.py` to generate file
+- Verify `.env` has both `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_URL`
+- Check Supabase project is active
+- Verify API keys are correct
 
-### Issue: PDF download fails
+### Issue: ThingSpeak rate limit
 **Solution:**
-- Ensure `jspdf` package is installed: `npm install jspdf`
-- Check if prediction has been run first
-- Verify `prediction_results.json` contains valid data
+- Script has 15-second delay between updates
+- Free ThingSpeak accounts limited to 1 update per 15 seconds
 
-### Issue: Mobile layout issues
+### Issue: Prediction model fails
 **Solution:**
-- Clear browser cache
-- Ensure viewport meta tag is present
-- Check Tailwind CSS responsive classes are applied
+- Ensure sufficient data in database (minimum 100 records)
+- Check `prediction_model.py` has database access
+- Verify all Python ML libraries installed
+
+### Issue: Unicode error in Windows console
+**Solution:**
+- Already fixed: Checkmark characters replaced with `[OK]`
+- If persists, run: `chcp 65001` in terminal
 
 ---
 
@@ -483,12 +749,14 @@ Browser downloads file
 IoT_Mini_Project_Group_H/
 ├── app/
 │   ├── api/
-│   │   ├── average-data/route.js
-│   │   ├── download-forecast-image/route.js
-│   │   ├── download-prediction-report/route.js
-│   │   ├── predict-temperature/route.js
-│   │   ├── run-prediction/route.js
-│   │   └── sensor-data/route.js
+│   │   ├── sensor-data/
+│   │   ├── average-data/
+│   │   ├── predict-temperature/
+│   │   ├── run-prediction/
+│   │   ├── download-forecast-image/
+│   │   └── download-prediction-report/
+│   ├── temperature-predictor/
+│   ├── globals.css
 │   ├── layout.js
 │   └── page.jsx
 ├── components/
@@ -496,89 +764,74 @@ IoT_Mini_Project_Group_H/
 │   │   ├── dashboard_summary.jsx
 │   │   ├── sensor_charts.jsx
 │   │   └── data_graph_card.jsx
-│   ├── temperature-predictor.jsx
-│   └── ui/ (shadcn components)
-├── sensor_data/
-│   └── sensor/
-│       ├── prediction_model.py
-│       ├── prediction_results.json
-│       ├── temperature_forecast.png
-│       └── average_summary.json
+│   ├── ui/
+│   ├── header.jsx
+│   └── temperature-predictor.jsx
+├── sensor_data/sensor/
+│   ├── temp_humidity_motion_sensor_data_lora.py
+│   ├── fetch_supabase_data.py
+│   ├── average_summary.py
+│   └── prediction_model.py
 ├── .env
 ├── package.json
-└── DOCUMENTATION.md
+├── requirements.txt
+├── average_summary.json
+├── prediction_results.json
+├── temperature_forecast.png
+└── thingspeak_historical_data.csv
 ```
 
 ---
 
-## Performance Optimization
+## Performance Metrics
 
-### Frontend
-- Lazy loading for charts
-- Memoization of expensive calculations
-- Debounced API calls
-- Responsive image loading
+### System Capabilities
+- **Data Collection Rate**: Real-time (MQTT push)
+- **Database Monitoring**: 30-second intervals
+- **Prediction Time**: 30-60 seconds
+- **Data Storage**: Unlimited (Supabase)
+- **Historical Data**: 8000 records (ThingSpeak free tier)
 
-### Backend
-- Efficient database queries
-- JSON file caching
-- Minimal data transfer
-- Error handling with graceful fallbacks
-
-### ML Model
-- Feature selection (13 most important features)
-- Efficient data preprocessing
-- Model caching between runs
-- Optimized hyperparameters
+### Model Performance (Typical)
+- **RMSE**: < 0.001°C
+- **MAE**: < 0.0001°C
+- **R² Score**: > 0.999 (Excellent)
+- **Training Time**: 20-40 seconds
 
 ---
 
 ## Security Considerations
 
-1. **Environment Variables**: Sensitive keys stored in `.env`
-2. **API Rate Limiting**: Consider implementing for production
-3. **Input Validation**: Validate all user inputs
-4. **Database Security**: Use Supabase Row Level Security (RLS)
-5. **CORS**: Configure for production domains
+1. **Environment Variables**: All credentials in `.env` file
+2. **API Keys**: Never commit to version control
+3. **Database**: Row-level security enabled in Supabase
+4. **MQTT**: Authenticated connection to TTN
+5. **Frontend**: API routes validate requests
 
 ---
 
 ## Future Enhancements
 
-1. **Real-time Updates**: WebSocket integration for live data
-2. **User Authentication**: Multi-user support with auth
-3. **Alert System**: Notifications for anomalies
-4. **Historical Comparison**: Compare predictions across time periods
-5. **Model Versioning**: Track model performance over time
-6. **Advanced Analytics**: Seasonal decomposition, trend analysis
-7. **Mobile App**: Native iOS/Android applications
-8. **API Documentation**: Swagger/OpenAPI integration
+- [ ] Add user authentication
+- [ ] Implement data export to multiple formats
+- [ ] Add email/SMS alerts for anomalies
+- [ ] Implement predictive maintenance
+- [ ] Add multi-sensor support
+- [ ] Create mobile app
+- [ ] Add weather API integration
+- [ ] Implement anomaly detection
 
 ---
 
 ## Support & Contact
 
-For issues, questions, or contributions:
-- Create an issue in the repository
-- Contact the development team
-- Review the troubleshooting section
+For issues or questions:
+- Check [Troubleshooting](#troubleshooting) section
+- Review console logs for error messages
+- Verify all environment variables are set
+- Ensure all services are running
 
 ---
 
-## License
-
-[Specify your license here]
-
----
-
-## Version History
-
-- **v1.0.0** (Current): Initial release with core features
-  - Temperature prediction
-  - Dashboard visualization
-  - PDF/PNG export
-  - Responsive design
-
----
-
-**Last Updated**: January 2025
+**Last Updated:** January 2025
+**Version:** 1.0.0

@@ -95,7 +95,7 @@ const SensorCard = () => {
           </div>
           <Popover>
             <PopoverTrigger asChild>
-              <Button className="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 cursor-pointer">
+              <Button className="w-full sm:w-auto cursor-pointer">
                 <IoCloudDownloadOutline className="mr-2 size-4" />
                 Export<span className="hidden sm:inline">&nbsp;CSV File</span>
               </Button>

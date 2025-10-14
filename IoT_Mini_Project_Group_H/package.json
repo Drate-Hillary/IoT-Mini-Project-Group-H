@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "concurrently \"next dev\" \"python sensor_data/sensor/temp_humidity_motion_sensor_data_lora.py\" \"python sensor_data/sensor/fetch_supabase_data.py\" \"python sensor_data/sensor/average_summary.py\"",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
