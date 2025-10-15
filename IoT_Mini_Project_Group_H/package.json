@@ -3,8 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"next dev\" \"python sensor_data/sensor/temp_humidity_motion_sensor_data_lora.py\" \"python sensor_data/sensor/fetch_supabase_data.py\"",
-    "dev:frontend": "next dev",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -40,7 +39,6 @@
   },
   "devDependencies": {
     "autoprefixer": "^10.0.1",
-    "concurrently": "^9.2.1",
     "eslint": "^8",
     "eslint-config-next": "^15.1.0",
     "postcss": "^8",

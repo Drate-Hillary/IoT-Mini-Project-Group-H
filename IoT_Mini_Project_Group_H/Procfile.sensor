@@ -1,0 +1,2 @@
+sensor: python sensor_data/sensor/temp_humidity_motion_sensor_data_lora.py
+monitor: python sensor_data/sensor/fetch_supabase_data.py
